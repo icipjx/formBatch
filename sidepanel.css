@@ -61,7 +61,8 @@ body{
   border-radius:var(--r);
   background: rgba(255,255,255,.02);
   box-shadow: none;
-  position:static;
+  position:relative;
+  z-index:30;
   backdrop-filter: none;
 }
 [data-theme="light"] .topbar{
@@ -83,7 +84,7 @@ body{
 .title .sub{font-size:12px; color:var(--muted); margin-top:2px}
 [data-theme="light"] .title .name{color:#10162a}
 .actions{display:flex; gap:8px}
-.settings-wrap{position:relative}
+.settings-wrap{position:relative; z-index:35}
 .settings-panel{
   position:absolute;
   right:0;
@@ -94,7 +95,7 @@ body{
   border:1px solid var(--border);
   background: color-mix(in srgb, var(--card) 92%, transparent);
   box-shadow: var(--shadow);
-  z-index:20;
+  z-index:40;
 }
 .settings-title{
   font-weight:800;
@@ -183,7 +184,7 @@ body{
   background: rgba(58,103,255,.12);
 }
 .ico{font-family: var(--mono); font-size:14px}
-.content{display:flex; flex-direction:column; gap:14px; margin-top:12px}
+.content{display:flex; flex-direction:column; gap:14px; margin-top:12px; position:relative; z-index:1}
 .card{
   border:1px solid var(--border);
   border-radius:var(--r);
@@ -348,6 +349,19 @@ body{
   display:flex;
   flex-direction:column;
   gap:10px;
+}
+.group-sep{
+  height:1px;
+  background: var(--border);
+  margin:6px 0;
+}
+.map-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.map-actions .btn{
+  flex:1 1 120px;
 }
 [data-theme="light"] .group{
   box-shadow: 0 8px 18px rgba(30,55,120,.06), 0 1px 0 rgba(255,255,255,.8) inset;
