@@ -350,6 +350,35 @@ body{
   flex-direction:column;
   gap:10px;
 }
+.group-hd{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+}
+.group-toggle{
+  width:24px;
+  height:24px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background: transparent;
+  color:var(--text);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.group-toggle:hover{border-color: rgba(122,162,255,.38)}
+.group.collapsed .group-body{display:none}
+.group.collapsed .group-toggle{transform: rotate(-90deg)}
+.group-body{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
 .group-sep{
   height:1px;
   background: var(--border);
@@ -359,9 +388,39 @@ body{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
+  margin-top:6px;
 }
 .map-actions .btn{
   flex:1 1 120px;
+}
+.identity-meta{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--muted);
+  padding:8px 10px;
+  border:1px dashed var(--border);
+  border-radius:12px;
+  background: transparent;
+  word-break:break-all;
+}
+.identity-options{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 12px;
+  font-size:12px;
+  color:var(--muted);
+}
+.identity-options label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.identity-status{
+  margin-top:2px;
+}
+[data-theme="light"] .identity-meta{
+  color:#3b4b70;
+  background: rgba(255,255,255,.6);
 }
 [data-theme="light"] .group{
   box-shadow: 0 8px 18px rgba(30,55,120,.06), 0 1px 0 rgba(255,255,255,.8) inset;
@@ -542,6 +601,10 @@ body{
 .filter-item:hover{background: rgba(255,255,255,.03)}
 .filter-rownum{font-family:var(--mono); color:var(--muted)}
 .filter-text{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+[data-theme="light"] .filter-rownum,
+[data-theme="light"] .filter-text{
+  color:#2f3a58;
+}
 .toggle{display:flex; gap:10px; align-items:center; font-size:13px}
 .toggle input{accent-color: var(--accent)}
 .small{color:var(--muted); font-size:12px}

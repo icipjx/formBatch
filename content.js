@@ -5,6 +5,7 @@
  */
 
 let pickSession = null; // {mode, colIndex, colName}
+let hoverBox = null;
 
 function cssEscapeIdent(ident) {
   return ident.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~\\])/g, "\\$1");
@@ -96,6 +97,37 @@ function highlight(el) {
   box.style.background = "rgba(122,162,255,.06)";
   document.documentElement.appendChild(box);
   setTimeout(() => box.remove(), 800);
+}
+
+function ensureHoverBox() {
+  if (hoverBox) return hoverBox;
+  hoverBox = document.createElement("div");
+  hoverBox.style.position = "fixed";
+  hoverBox.style.zIndex = "2147483646";
+  hoverBox.style.pointerEvents = "none";
+  hoverBox.style.borderRadius = "10px";
+  hoverBox.style.border = "2px solid rgba(94,154,255,.9)";
+  hoverBox.style.boxShadow = "0 0 0 6px rgba(94,154,255,.18)";
+  hoverBox.style.background = "rgba(94,154,255,.08)";
+  hoverBox.style.transition = "all 60ms ease";
+  document.documentElement.appendChild(hoverBox);
+  return hoverBox;
+}
+
+function updateHoverBox(el) {
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const box = ensureHoverBox();
+  box.style.left = `${r.left}px`;
+  box.style.top = `${r.top}px`;
+  box.style.width = `${r.width}px`;
+  box.style.height = `${r.height}px`;
+}
+
+function clearHoverBox() {
+  if (!hoverBox) return;
+  hoverBox.remove();
+  hoverBox = null;
 }
 
 function setValue(el, value) {
@@ -192,10 +224,13 @@ function fillOne(payload) {
 function onPickClick(e) {
   if (!pickSession) return;
   let target = e.target;
-  for (let i = 0; i < 4 && target && !isFillable(target); i++) {
-    target = target.parentElement;
+  if (pickSession.mode !== "identity") {
+    for (let i = 0; i < 4 && target && !isFillable(target); i++) {
+      target = target.parentElement;
+    }
+    if (!target || !isFillable(target)) return;
   }
-  if (!target || !isFillable(target)) return;
+  if (!target) return;
   e.preventDefault();
   e.stopPropagation();
 
@@ -208,6 +243,7 @@ function onPickClick(e) {
     placeholder: target.getAttribute?.("placeholder") || "",
     label: findLabelText(target),
     ariaLabel: target.getAttribute?.("aria-label") || "",
+    text: (target.textContent || "").trim(),
   };
 
   highlight(target);
@@ -225,11 +261,26 @@ function onPickClick(e) {
   endPick();
 }
 
+function onPickMove(e) {
+  if (!pickSession) return;
+  let target = e.target;
+  if (pickSession.mode !== "identity") {
+    for (let i = 0; i < 4 && target && !isFillable(target); i++) {
+      target = target.parentElement;
+    }
+    if (!target || !isFillable(target)) return;
+  }
+  if (!target) return;
+  updateHoverBox(target);
+}
+
 function endPick() {
   pickSession = null;
   window.removeEventListener("click", onPickClick, true);
+  window.removeEventListener("mousemove", onPickMove, true);
   window.removeEventListener("keydown", onPickEsc, true);
   document.documentElement.style.cursor = "";
+  clearHoverBox();
 }
 
 function onPickEsc(e) {
@@ -243,6 +294,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "FB_BEGIN_PICK") {
     pickSession = { mode: msg.mode, colIndex: msg.colIndex, colName: msg.colName };
     window.addEventListener("click", onPickClick, true);
+    window.addEventListener("mousemove", onPickMove, true);
     window.addEventListener("keydown", onPickEsc, true);
     document.documentElement.style.cursor = "crosshair";
     chrome.runtime.sendMessage({
@@ -251,6 +303,29 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     sendResponse({ ok: true });
     return true;
+  }
+
+  if (msg?.type === "FB_READ_TEXT") {
+    const selector = msg.payload?.selector;
+    try {
+      const el = document.querySelector(selector);
+      if (!el) {
+        sendResponse({ ok: false, text: "" });
+        return true;
+      }
+      const tag = el.tagName?.toLowerCase();
+      let text = "";
+      if (tag === "input" || tag === "textarea") text = el.value || "";
+      else if (tag === "select") {
+        const opt = el.selectedOptions?.[0];
+        text = opt?.textContent || el.value || "";
+      } else text = el.textContent || "";
+      sendResponse({ ok: true, text: text.trim() });
+      return true;
+    } catch (e) {
+      sendResponse({ ok: false, text: "" });
+      return true;
+    }
   }
 
   if (msg?.type === "FB_FILL_ONE") {

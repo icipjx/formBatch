@@ -46,6 +46,15 @@ const ui = {
   filterTitle: $("#filterTitle"),
   filterList: $("#filterList"),
   settingsPanel: $("#settingsPanel"),
+  identityColSelect: $("#identityColSelect"),
+  btnPickIdentity: $("#btnPickIdentity"),
+  identityStrategy: $("#identityStrategy"),
+  idOptTrim: $("#idOptTrim"),
+  idOptLower: $("#idOptLower"),
+  idOptCollapse: $("#idOptCollapse"),
+  btnMatchIdentity: $("#btnMatchIdentity"),
+  identityStatus: $("#identityStatus"),
+  identityMapList: $("#identityMapList"),
 };
 
 const state = {
@@ -70,6 +79,7 @@ const state = {
     currentRowIndex: null, // Excel row number
   },
   lang: "zh",
+  identityMapping: null, // {colIndex, colName, selector, matchStrategy, normalize}
 };
 
 const i18n = {
@@ -100,18 +110,33 @@ const i18n = {
     "data.sheet": "Sheet（仅 XLSX）",
     "data.rowRange": "行范围",
     "map.title": "2) 字段映射",
-    "map.desc": "选择列→点选网页字段→完成映射。",
-    "map.selectCol": "选择列",
-    "map.pick": "开始点选网页字段",
+    "map.desc": "绑定数据列映射关系和数据行的映射关系（身份映射）。",
+    "map.selectCol": "数据列映射",
+    "map.pick": "开始点选网页数据列字段",
     "map.hint": "提示：点击网页中的输入框/下拉框/文本区域，即可绑定到当前列。",
-    "map.list": "映射列表",
+    "map.list": "数据列映射列表",
     "map.save": "保存到当前站点",
     "map.clear": "清空映射",
     "map.load": "载入站点配置",
     "map.view": "查看站点配置",
+    "identity.title": "数据行映射(身份映射)",
+    "identity.desc": "建议使用唯一 ID 列，名称可能重复。",
+    "identity.col": "锚点列（建议使用唯一 ID 列，名称可能重复）",
+    "identity.pick": "开始点选网页身份列字段",
+    "identity.list": "身份映射列表",
+    "identity.hint": "提示：点击网页任意元素，绑定数据身份列，实现当前页面自动选择填充数据行。",
+    "identity.strategy": "匹配策略",
+    "identity.autoTitle": "自动匹配填充行",
+    "identity.strategy.exact": "完全一致",
+    "identity.strategy.contains": "包含匹配",
+    "identity.strategy.normalize": "标准化匹配",
+    "identity.opt.trim": "去空格",
+    "identity.opt.lower": "忽略大小写",
+    "identity.opt.collapse": "合并多空格",
+    "identity.match": "自动匹配当前页面行",
     "fill.title": "3) 网页填充",
     "fill.desc": "逐行填充，用户手动确认保存/提交。",
-    "fill.rowSelect": "行选择",
+    "fill.rowSelect": "手动选择填充行",
     "fill.filterField": "筛选字段",
     "fill.keyword": "关键词（模糊匹配）",
     "fill.keyword.ph": "例如：张三 / EMP-0001",
@@ -151,18 +176,33 @@ const i18n = {
     "data.sheet": "Sheet (XLSX only)",
     "data.rowRange": "Row range",
     "map.title": "2) Field Mapping",
-    "map.desc": "Select column → pick field → map.",
-    "map.selectCol": "Select column",
-    "map.pick": "Pick field on page",
+    "map.desc": "Bind data column mappings and identity row mapping.",
+    "map.selectCol": "Data column mapping",
+    "map.pick": "Pick data field on page",
     "map.hint": "Tip: click an input/select/textarea to bind it to current column.",
-    "map.list": "Mapping list",
+    "map.list": "Data mapping list",
     "map.save": "Save to current site",
     "map.clear": "Clear mapping",
     "map.load": "Load site config",
     "map.view": "View site configs",
+    "identity.title": "Row Mapping (Identity)",
+    "identity.desc": "Use a unique ID when possible; names may repeat.",
+    "identity.col": "Anchor column (prefer a unique ID; names may repeat)",
+    "identity.pick": "Pick identity column on page",
+    "identity.list": "Identity mapping",
+    "identity.hint": "Tip: click any element to bind the identity column and auto-locate the row.",
+    "identity.strategy": "Match strategy",
+    "identity.autoTitle": "Auto match row",
+    "identity.strategy.exact": "Exact",
+    "identity.strategy.contains": "Contains",
+    "identity.strategy.normalize": "Normalize",
+    "identity.opt.trim": "Trim",
+    "identity.opt.lower": "Lowercase",
+    "identity.opt.collapse": "Collapse spaces",
+    "identity.match": "Match row on current page",
     "fill.title": "3) Web Fill",
     "fill.desc": "Fill row by row. User confirms save/submit.",
-    "fill.rowSelect": "Row selection",
+    "fill.rowSelect": "Manual row selection",
     "fill.filterField": "Filter field",
     "fill.keyword": "Keyword (fuzzy)",
     "fill.keyword.ph": "e.g. John / EMP-0001",
@@ -208,6 +248,7 @@ function setLang(lang) {
   document.querySelectorAll(".seg-btn[data-lang]").forEach((btn) => {
     btn.classList.toggle("is-active", btn.getAttribute("data-lang") === lang);
   });
+  renderIdentityMappingUI();
 }
 
 function log(line) {
@@ -249,6 +290,7 @@ async function safeSendToActiveTab(message) {
 function refreshColsUI() {
   ui.colSelect.innerHTML = "";
   ui.filterField.innerHTML = "";
+  if (ui.identityColSelect) ui.identityColSelect.innerHTML = "";
   state.data.headers.forEach((h, idx) => {
     const label = h || `列${idx + 1}`;
     const opt1 = document.createElement("option");
@@ -260,11 +302,19 @@ function refreshColsUI() {
     opt2.value = String(idx);
     opt2.textContent = label;
     ui.filterField.appendChild(opt2);
+
+    if (ui.identityColSelect) {
+      const opt3 = document.createElement("option");
+      opt3.value = String(idx);
+      opt3.textContent = label;
+      ui.identityColSelect.appendChild(opt3);
+    }
   });
   ui.filterField.value = "0";
   ui.pillCols.textContent = `${state.data.headers.length} 列`;
   ui.pillRows.textContent = `${state.data.rows.length} 行`;
   updatePickIndicator();
+  updateIdentityIndicator();
   updateFillIndicator();
 }
 
@@ -272,6 +322,85 @@ function updatePickIndicator() {
   const hasSelection = state.data.headers.length > 0 && String(ui.colSelect.value || "").length > 0;
   const ready = hasSelection && !state.pick.active;
   ui.btnPick.classList.toggle("is-ready", ready);
+  ui.btnPick.disabled = !ready;
+}
+
+function updateIdentityIndicator() {
+  if (!ui.btnPickIdentity || !ui.identityColSelect) return;
+  const hasSelection = state.data.headers.length > 0 && String(ui.identityColSelect.value || "").length > 0;
+  const ready = hasSelection && !state.pick.active;
+  ui.btnPickIdentity.classList.toggle("is-ready", ready);
+  ui.btnPickIdentity.disabled = !ready;
+}
+
+function getIdentityNormalizeOptions() {
+  return {
+    trim: !!ui.idOptTrim?.checked,
+    lower: !!ui.idOptLower?.checked,
+    collapseSpaces: !!ui.idOptCollapse?.checked,
+  };
+}
+
+function updateIdentityUI() {
+  if (!state.identityMapping) {
+    if (ui.identityStatus) ui.identityStatus.textContent = "—";
+    renderIdentityMappingUI();
+    return;
+  }
+  if (ui.identityStrategy) ui.identityStrategy.value = state.identityMapping.matchStrategy || "exact";
+  if (ui.idOptTrim) ui.idOptTrim.checked = !!state.identityMapping.normalize?.trim;
+  if (ui.idOptLower) ui.idOptLower.checked = !!state.identityMapping.normalize?.lower;
+  if (ui.idOptCollapse) ui.idOptCollapse.checked = !!state.identityMapping.normalize?.collapseSpaces;
+  renderIdentityMappingUI();
+}
+
+function renderIdentityMappingUI() {
+  if (!ui.identityMapList) return;
+  ui.identityMapList.innerHTML = "";
+  if (!state.identityMapping?.selector) {
+    const empty = document.createElement("div");
+    empty.style.padding = "10px";
+    empty.style.color = "var(--muted)";
+    empty.style.fontSize = "12px";
+    empty.textContent = state.lang === "en"
+      ? "No identity mapping yet. Select a column and pick an element."
+      : "暂无身份映射。选择一列并点选页面身份字段。";
+    ui.identityMapList.appendChild(empty);
+    return;
+  }
+
+  const wrap = document.createElement("div");
+  wrap.className = "mapitem";
+
+  const badge = document.createElement("div");
+  badge.className = "badge";
+  badge.textContent = `${state.identityMapping.colName || (state.lang === "en" ? "Unnamed" : "未命名列")}`;
+
+  const meta = document.createElement("div");
+  meta.className = "mapmeta";
+  const t = document.createElement("div");
+  t.className = "t";
+  t.textContent = state.lang === "en"
+    ? `${state.identityMapping.colName || "Column"} → Page`
+    : `${state.identityMapping.colName || "锚点列"} → 页面元素`;
+  const d = document.createElement("div");
+  d.className = "d";
+  d.textContent = state.identityMapping.selector;
+
+  meta.appendChild(t);
+  meta.appendChild(d);
+  wrap.appendChild(badge);
+  wrap.appendChild(meta);
+
+  const x = document.createElement("button");
+  x.className = "x";
+  x.textContent = state.lang === "en" ? "Remove" : "移除";
+  x.addEventListener("click", () => {
+    state.identityMapping = null;
+    updateIdentityUI();
+  });
+  wrap.appendChild(x);
+  ui.identityMapList.appendChild(wrap);
 }
 
 function updateFillIndicator() {
@@ -295,6 +424,21 @@ function setupCardToggles() {
       e.stopPropagation();
       if (!card) return;
       const collapsed = card.classList.toggle("collapsed");
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      btn.textContent = collapsed ? ">" : "v";
+    });
+  });
+}
+
+function setupGroupToggles() {
+  document.querySelectorAll(".group-hd").forEach((hd) => {
+    const btn = hd.querySelector(".group-toggle");
+    if (!btn) return;
+    const group = hd.closest(".group");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!group) return;
+      const collapsed = group.classList.toggle("collapsed");
       btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
       btn.textContent = collapsed ? ">" : "v";
     });
@@ -448,6 +592,80 @@ function renderRowPreview(row, rowIndex) {
   }
 }
 
+function normalizeIdentityValue(val, opts) {
+  let s = String(val ?? "");
+  if (opts?.trim) s = s.trim();
+  if (opts?.collapseSpaces) s = s.replace(/\s+/g, " ");
+  if (opts?.lower) s = s.toLowerCase();
+  return s;
+}
+
+async function matchIdentityRow() {
+  if (!state.identityMapping?.selector) {
+    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No identity mapping yet." : "尚未绑定页面身份字段。";
+    return;
+  }
+  if (!state.data.rows.length) {
+    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "Please load data first." : "请先载入数据。";
+    return;
+  }
+  const colIndex = parseInt(ui.identityColSelect?.value || state.identityMapping.colIndex || "0", 10);
+  const strategy = ui.identityStrategy?.value || state.identityMapping.matchStrategy || "exact";
+  const normalize = getIdentityNormalizeOptions();
+  state.identityMapping.colIndex = colIndex;
+  state.identityMapping.matchStrategy = strategy;
+  state.identityMapping.normalize = normalize;
+
+  let pageValue = "";
+  try {
+    const res = await safeSendToActiveTab({
+      type: "FB_READ_TEXT",
+      payload: { selector: state.identityMapping.selector },
+    });
+    pageValue = String(res?.text || "").trim();
+  } catch (e) {
+    if (ui.identityStatus) ui.identityStatus.textContent = (state.lang === "en" ? "Read failed: " : "读取失败：") + String(e?.message || e);
+    return;
+  }
+
+  if (!pageValue) {
+    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No text found on page." : "页面未读取到身份文本。";
+    return;
+  }
+
+  const matches = [];
+  state.data.rows.forEach((row, idx) => {
+    const cell = row?.[colIndex];
+    if (cell === undefined || cell === null) return;
+    const cellStr = String(cell);
+    if (strategy === "exact") {
+      if (cellStr === pageValue) matches.push(idx);
+      return;
+    }
+    if (strategy === "contains") {
+      if (cellStr.includes(pageValue) || pageValue.includes(cellStr)) matches.push(idx);
+      return;
+    }
+    const left = normalizeIdentityValue(cellStr, normalize);
+    const right = normalizeIdentityValue(pageValue, normalize);
+    if (left && right && left === right) matches.push(idx);
+  });
+
+  if (matches.length === 0) {
+    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No match found." : "未匹配到，请检查映射或数据。";
+    return;
+  }
+  if (matches.length > 1) {
+    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? `Matched ${matches.length} rows. Use a unique column.` : `匹配到 ${matches.length} 条，请使用更唯一的列。`;
+    return;
+  }
+
+  const rowIndex = matches[0] + 2;
+  state.selection.currentRowIndex = rowIndex;
+  renderRowPreview(state.data.rows[matches[0]] || [], rowIndex);
+  if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? `Matched row ${rowIndex}: ${pageValue}` : `已匹配到第 ${rowIndex} 行：${pageValue}`;
+}
+
 // -------- Data parsing --------
 function parseCSV(text) {
   const rows = [];
@@ -574,7 +792,7 @@ async function computeSiteKey() {
 async function saveSiteConfig() {
   const key = await computeSiteKey();
   state.runner.siteKey = key;
-  const payload = { mapping: state.mapping };
+  const payload = { mapping: state.mapping, identityMapping: state.identityMapping };
   await chrome.storage.local.set({ ["site:" + key]: payload });
   log(state.lang === "en" ? "Saved site config: " + key : "已保存站点配置：" + key);
 }
@@ -589,7 +807,9 @@ async function loadSiteConfig() {
     return;
   }
   state.mapping = payload.mapping || [];
+  state.identityMapping = payload.identityMapping || null;
   refreshMappingUI();
+  updateIdentityUI();
   log(state.lang === "en" ? "Loaded site config: " + key : "已载入站点配置：" + key);
 }
 
@@ -601,7 +821,9 @@ async function loadSiteConfigByKey(key) {
     return;
   }
   state.mapping = payload.mapping || [];
+  state.identityMapping = payload.identityMapping || null;
   refreshMappingUI();
+  updateIdentityUI();
   log(state.lang === "en" ? "Loaded site config: " + key : "已载入站点配置：" + key);
 }
 
@@ -653,7 +875,9 @@ async function beginPick(mode) {
   const tab = await getActiveTab();
   if (!tab?.id) return;
 
-  const colIndex = parseInt(ui.colSelect.value || "0", 10);
+  const colIndex = mode === "identity"
+    ? parseInt(ui.identityColSelect?.value || "0", 10)
+    : parseInt(ui.colSelect.value || "0", 10);
   const colName = state.data.headers[colIndex] ?? `列${colIndex + 1}`;
 
   setStatus({ stateText: state.lang === "en" ? "Picking" : "点选中", msg: state.lang === "en" ? "Click the target element on the page." : "请到网页上点击目标元素。" });
@@ -661,6 +885,7 @@ async function beginPick(mode) {
 
   state.pick.active = true;
   updatePickIndicator();
+  updateIdentityIndicator();
 
   try {
     await safeSendToActiveTab({
@@ -675,20 +900,39 @@ async function beginPick(mode) {
     setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg });
     state.pick.active = false;
     updatePickIndicator();
+    updateIdentityIndicator();
   }
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "FB_PICK_RESULT") {
     const { mode, colIndex, colName, selector, meta } = msg.payload;
-    if (mode !== "field") return;
     state.pick.active = false;
     updatePickIndicator();
-    state.mapping = state.mapping.filter((m) => m.colIndex !== colIndex);
-    state.mapping.push({ col: colName, colIndex, selector, meta });
-    refreshMappingUI();
-    log(state.lang === "en" ? `Bound: ${colName} -> ${selector}` : `已绑定：${colName} -> ${selector}`);
-    setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Field bound." : "字段已绑定。" });
+    updateIdentityIndicator();
+
+    if (mode === "field") {
+      state.mapping = state.mapping.filter((m) => m.colIndex !== colIndex);
+      state.mapping.push({ col: colName, colIndex, selector, meta });
+      refreshMappingUI();
+      log(state.lang === "en" ? `Bound: ${colName} -> ${selector}` : `已绑定：${colName} -> ${selector}`);
+      setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Field bound." : "字段已绑定。" });
+      return;
+    }
+
+    if (mode === "identity") {
+      state.identityMapping = {
+        colIndex,
+        colName,
+        selector,
+        meta,
+        matchStrategy: ui.identityStrategy?.value || "exact",
+        normalize: getIdentityNormalizeOptions(),
+      };
+      updateIdentityUI();
+      if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "Identity field bound." : "身份字段已绑定。";
+      log(state.lang === "en" ? `Identity bound: ${colName} -> ${selector}` : `身份已绑定：${colName} -> ${selector}`);
+    }
   }
 
   if (msg?.type === "FB_PICK_CANCELLED") {
@@ -696,6 +940,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     log(state.lang === "en" ? "Pick cancelled." : "点选已取消。");
     state.pick.active = false;
     updatePickIndicator();
+    updateIdentityIndicator();
   }
 
   if (msg?.type === "FB_RUN_EVENT") {
@@ -782,6 +1027,7 @@ async function runBatch({ stepOnly = false }) {
 async function init() {
   setupModuleLayout();
   setupCardToggles();
+  setupGroupToggles();
 
   const stored = await chrome.storage.local.get(["ui:theme", "ui:lang"]);
   const theme = stored["ui:theme"] || "dark";
@@ -794,6 +1040,8 @@ async function init() {
   setStatus({ stateText: lang === "en" ? "Ready" : "就绪", progText: "0 / 0", rowText: "—", msg: "—" });
   updatePickIndicator();
   updateFillIndicator();
+  updateIdentityUI();
+  updateIdentityIndicator();
 
   ui.fileInput.addEventListener("change", async () => {
     const f = ui.fileInput.files?.[0];
@@ -824,8 +1072,18 @@ async function init() {
   ui.colSelect.addEventListener("change", () => {
     updatePickIndicator();
   });
+  if (ui.identityColSelect) {
+    ui.identityColSelect.addEventListener("change", () => {
+      updateIdentityIndicator();
+      if (state.identityMapping) {
+        state.identityMapping.colIndex = parseInt(ui.identityColSelect.value || "0", 10);
+        state.identityMapping.colName = state.data.headers[state.identityMapping.colIndex] || state.identityMapping.colName;
+      }
+    });
+  }
 
   ui.btnPick.addEventListener("click", () => beginPick("field"));
+  if (ui.btnPickIdentity) ui.btnPickIdentity.addEventListener("click", () => beginPick("identity"));
 
   ui.btnSaveMap.addEventListener("click", saveSiteConfig);
   ui.btnClearMap.addEventListener("click", () => {
@@ -841,6 +1099,21 @@ async function init() {
     ui.siteList.style.display = show ? "block" : "none";
     ui.btnViewSites.classList.toggle("is-active", show);
   });
+
+  if (ui.identityStrategy) {
+    ui.identityStrategy.addEventListener("change", () => {
+      if (!state.identityMapping) return;
+      state.identityMapping.matchStrategy = ui.identityStrategy.value;
+    });
+  }
+  [ui.idOptTrim, ui.idOptLower, ui.idOptCollapse].forEach((el) => {
+    if (!el) return;
+    el.addEventListener("change", () => {
+      if (!state.identityMapping) return;
+      state.identityMapping.normalize = getIdentityNormalizeOptions();
+    });
+  });
+  if (ui.btnMatchIdentity) ui.btnMatchIdentity.addEventListener("click", matchIdentityRow);
 
   ui.btnFilter.addEventListener("click", () => {
     ui.filterTitle.style.display = "block";
