@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
@@ -13,42 +13,62 @@
         <div class="logo"></div>
         <div class="title">
           <div class="name">FormBatcher</div>
-          <div class="sub">Batch-fill any web form · CSV / XLSX</div>
+          <div class="sub" data-i18n="brand.sub">Batch-fill any web form · CSV / XLSX</div>
         </div>
       </div>
 
-      <div class="actions">
-        <button class="btn ghost" id="btnTheme" title="切换主题">
-          <span class="ico">☾</span>
+      <div class="actions settings-wrap">
+        <button class="btn ghost" id="btnSettings" title="设置" data-i18n-title="settings.title">
+          <span class="ico">🛠</span>
         </button>
-        <button class="btn ghost" id="btnHelp" title="使用说明">?</button>
+        <button class="btn ghost" id="btnHelp" title="使用说明" data-i18n-title="help.title">?</button>
+
+        <div class="settings-panel" id="settingsPanel" style="display:none;">
+          <div class="settings-title" data-i18n="settings.title">设置</div>
+
+          <div class="settings-section">
+            <div class="settings-label" data-i18n="settings.theme">主题</div>
+            <div class="segmented" role="group" aria-label="Theme">
+              <button class="seg-btn" data-theme-val="dark" data-i18n="settings.theme.dark">暗色</button>
+              <button class="seg-btn" data-theme-val="light" data-i18n="settings.theme.light">亮色</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="settings-label" data-i18n="settings.lang">语言</div>
+            <div class="segmented" role="group" aria-label="Language">
+              <button class="seg-btn" data-lang="zh" data-i18n="settings.lang.zh">中文</button>
+              <button class="seg-btn" data-lang="en" data-i18n="settings.lang.en">English</button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
     <main class="content">
       <section class="card" id="helpCard" style="display:none;">
         <div class="card-hd">
-          <div class="card-title">使用说明（MVP）</div>
-          <div class="card-desc">不需要系统开发权限，模拟你在网页上输入与点击。</div>
+          <div class="card-title" data-i18n="help.title">使用说明（MVP）</div>
+          <div class="card-desc" data-i18n="help.desc">不需要系统开发权限，模拟你在网页上输入与点击。</div>
         </div>
         <div class="card-bd">
           <ol class="help">
-            <li>打开目标系统的“新增/编辑”表单页面。</li>
-            <li>打开浏览器侧边栏：点击扩展图标 → 打开侧边栏。</li>
-            <li>选择 CSV / XLSX 文件（第一行是表头）。</li>
-            <li>在“选择列”里选中列名，点击“开始点选网页字段”，然后去网页上点对应输入框完成绑定。</li>
-            <li>点击“只填当前行”，逐行完成录入。</li>
+            <li data-i18n="help.step1">打开目标系统的“新增/编辑”表单页面。</li>
+            <li data-i18n="help.step2">打开浏览器侧边栏：点击扩展图标→打开侧边栏。</li>
+            <li data-i18n="help.step3">选择 CSV / XLSX 文件（第一行是表头）。</li>
+            <li data-i18n="help.step4">在“选择列”里选中列名，点击“开始点选网页字段”，然后去网页上点对应输入框完成绑定。</li>
+            <li data-i18n="help.step5">点击“填充当前行”，逐行完成录入。</li>
           </ol>
           <div class="tip">
-            <b>提示：</b>保存/提交由用户手动完成，避免误操作。
+            <b data-i18n="help.tipLabel">提示：</b><span data-i18n="help.tip">保存/提交由用户手动完成，避免误操作。</span>
           </div>
         </div>
       </section>
 
       <section class="card">
         <div class="card-hd">
-          <div class="card-title">日志</div>
-          <div class="card-desc">运行过程与异常记录。</div>
+          <div class="card-title" data-i18n="log.title">日志</div>
+          <div class="card-desc" data-i18n="log.desc">运行过程与异常记录。</div>
         </div>
         <div class="card-bd">
           <div class="group log" id="logBox"></div>
@@ -57,16 +77,16 @@
 
       <section class="card">
         <div class="card-hd">
-          <div class="card-title">1) 数据源</div>
-          <div class="card-desc">导入表格文件，使用第一行作为表头。</div>
+          <div class="card-title" data-i18n="data.title">1) 数据源</div>
+          <div class="card-desc" data-i18n="data.desc">导入表格文件，使用第一行作为表头。</div>
         </div>
         <div class="card-bd">
           <div class="row">
             <label class="file">
               <input type="file" id="fileInput" accept=".csv,.xlsx" />
-              <span class="file-btn">上传数据文件</span>
+              <span class="file-btn" data-i18n="data.upload">上传数据文件</span>
               <span class="file-name">
-                <span class="file-name-text" id="fileNameText">未选择</span>
+                <span class="file-name-text" id="fileNameText" data-i18n="data.noFile">未选择</span>
                 <button class="file-clear" id="btnClearFile" title="清除已选文件" type="button">×</button>
               </span>
             </label>
@@ -74,11 +94,11 @@
 
           <div class="row grid2">
             <div class="field">
-              <div class="label">Sheet（仅 XLSX）</div>
+              <div class="label" data-i18n="data.sheet">Sheet（仅 XLSX）</div>
               <select id="sheetSelect" class="input"></select>
             </div>
             <div class="field">
-              <div class="label">行范围</div>
+              <div class="label" data-i18n="data.rowRange">行范围</div>
               <div class="range">
                 <input id="rowStart" class="input" type="number" min="2" value="2" />
                 <span class="sep">—</span>
@@ -96,33 +116,33 @@
 
       <section class="card">
         <div class="card-hd">
-          <div class="card-title">2) 字段映射</div>
-          <div class="card-desc">选择列 → 点选网页字段 → 完成映射。</div>
+          <div class="card-title" data-i18n="map.title">2) 字段映射</div>
+          <div class="card-desc" data-i18n="map.desc">选择列→点选网页字段→完成映射。</div>
         </div>
         <div class="card-bd">
           <div class="group">
-            <div class="label">选择列</div>
+            <div class="label" data-i18n="map.selectCol">选择列</div>
             <select id="colSelect" class="input"></select>
 
             <button class="btn primary" id="btnPick">
               <span class="dot"></span>
-              开始点选网页字段
+              <span data-i18n="map.pick">开始点选网页字段</span>
             </button>
 
-            <div class="hint" id="pickHint">
+            <div class="hint" id="pickHint" data-i18n="map.hint">
               提示：点击网页中的输入框/下拉框/文本区域，即可绑定到当前列。
             </div>
           </div>
 
           <div class="group mt">
-            <div class="label">映射列表</div>
+            <div class="label" data-i18n="map.list">映射列表</div>
             <div class="maplist" id="mapList"></div>
 
             <div class="row mt2">
-              <button class="btn" id="btnSaveMap">保存到当前站点</button>
-              <button class="btn danger" id="btnClearMap">清空映射</button>
-              <button class="btn ghost" id="btnLoadSite">载入站点配置</button>
-              <button class="btn ghost" id="btnViewSites">查看站点配置</button>
+              <button class="btn" id="btnSaveMap" data-i18n="map.save">保存到当前站点</button>
+              <button class="btn danger" id="btnClearMap" data-i18n="map.clear">清空映射</button>
+              <button class="btn ghost" id="btnLoadSite" data-i18n="map.load">载入站点配置</button>
+              <button class="btn ghost" id="btnViewSites" data-i18n="map.view">查看站点配置</button>
             </div>
             <div class="site-list" id="siteList" style="display:none;"></div>
           </div>
@@ -131,44 +151,45 @@
 
       <section class="card">
         <div class="card-hd">
-          <div class="card-title">3) 网页填充</div>
-          <div class="card-desc">逐行填充，用户手动确认保存/提交。</div>
+          <div class="card-title" data-i18n="fill.title">3) 网页填充</div>
+          <div class="card-desc" data-i18n="fill.desc">逐行填充，用户手动确认保存/提交。</div>
         </div>
         <div class="card-bd">
           <div class="group">
-            <div class="label" id="rowPreviewLabel">当前行号 —，预览</div>
-            <div class="row-preview" id="rowPreview">
+            <div class="label" data-i18n="fill.rowSelect">行选择</div>
+            <div class="row grid2">
+              <div class="field">
+                <div class="label" data-i18n="fill.filterField">筛选字段</div>
+                <select id="filterField" class="input"></select>
+              </div>
+              <div class="field">
+                <div class="label" data-i18n="fill.keyword">关键词（模糊匹配）</div>
+                <div class="row">
+                  <input id="filterKeyword" class="input" type="text" placeholder="例如：张三 / EMP-0001" data-i18n-placeholder="fill.keyword.ph" />
+                  <button class="btn" id="btnFilter" data-i18n="fill.search">查询</button>
+                </div>
+              </div>
+            </div>
+            <div class="label filter-title" id="filterTitle" style="display:none;" data-i18n="fill.result">查询结果</div>
+            <div class="filter-list" id="filterList" style="display:none;"></div>
+          </div>
+
+          <div class="group mt">
+            <div class="label" data-i18n="fill.block">填充</div>
+            <div class="small" id="rowPreviewLabel" data-i18n="fill.preview">预览当前行号 — 数据</div>
+            <div class="toggle mt1">
+              <input type="checkbox" id="autoAdvance" />
+              <label for="autoAdvance" data-i18n="fill.auto">自动步进下一行数据</label>
+            </div>
+            <div class="row-preview">
               <div class="row-preview-head" id="rowPreviewHead">—</div>
               <div class="row-preview-body" id="rowPreviewBody">—</div>
             </div>
-          </div>
-
-          <div class="group mt">
-            <div class="label">填充</div>
             <div class="row">
-              <button class="btn primary" id="btnStep">只填当前行</button>
-            </div>
-          </div>
-
-          <div class="group status mt" id="statusBox">
-            <div class="status-line">
-              <span class="k">状态</span><span class="v" id="stState">就绪</span>
-            </div>
-            <div class="status-line">
-              <span class="k">进度</span><span class="v" id="stProg">0 / 0</span>
-            </div>
-            <div class="status-line">
-              <span class="k">当前行</span><span class="v" id="stRow">—</span>
-            </div>
-            <div class="status-line">
-              <span class="k">消息</span><span class="v" id="stMsg">—</span>
-            </div>
-          </div>
-
-          <div class="group mt">
-            <div class="label">结果</div>
-            <div class="row">
-              <button class="btn" id="btnExport">导出结果 CSV</button>
+              <button class="btn primary block" id="btnStep">
+                <span class="dot"></span>
+                <span data-i18n="fill.step">填充当前行</span>
+              </button>
             </div>
           </div>
         </div>
@@ -176,9 +197,9 @@
     </main>
 
     <footer class="footer">
-      <span>v0.1 MVP · Local-first · No cloud</span>
+      <span data-i18n="footer.text">v0.1 MVP · Local-first · No cloud</span>
       <span class="sep">·</span>
-      <a class="link" href="#" id="openOptions">站点配置键</a>
+      <a class="link" href="#" id="openOptions" data-i18n="footer.siteKey">站点配置键</a>
     </footer>
   </div>
 

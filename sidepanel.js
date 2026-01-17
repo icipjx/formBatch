@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FormBatcher MVP Side Panel
  * - Import CSV/XLSX
  * - Field mapping by "pick element on page"
@@ -32,14 +32,20 @@ const ui = {
   stMsg: $("#stMsg"),
   btnExport: $("#btnExport"),
   logBox: $("#logBox"),
-  rowPreview: $("#rowPreview"),
-  rowPreviewLabel: $("#rowPreviewLabel"),
-  rowPreviewHead: $("#rowPreviewHead"),
-  rowPreviewBody: $("#rowPreviewBody"),
-  btnTheme: $("#btnTheme"),
+  btnSettings: $("#btnSettings"),
   btnHelp: $("#btnHelp"),
   helpCard: $("#helpCard"),
   btnClearFile: $("#btnClearFile"),
+  rowPreviewLabel: $("#rowPreviewLabel"),
+  rowPreviewHead: $("#rowPreviewHead"),
+  rowPreviewBody: $("#rowPreviewBody"),
+  autoAdvance: $("#autoAdvance"),
+  filterField: $("#filterField"),
+  filterKeyword: $("#filterKeyword"),
+  btnFilter: $("#btnFilter"),
+  filterTitle: $("#filterTitle"),
+  filterList: $("#filterList"),
+  settingsPanel: $("#settingsPanel"),
 };
 
 const state = {
@@ -54,16 +60,155 @@ const state = {
   mapping: [], // {col, colIndex, selector, meta}
   runner: {
     running: false,
-    paused: false,
-    stop: false,
-    cursor: 0,
     results: [], // {i, status, msg}
     siteKey: null,
   },
   pick: {
     active: false,
   },
+  selection: {
+    currentRowIndex: null, // Excel row number
+  },
+  lang: "zh",
 };
+
+const i18n = {
+  zh: {
+    "brand.sub": "Batch-fill any web form · CSV / XLSX",
+    "settings.title": "设置",
+    "settings.theme": "主题",
+    "settings.theme.dark": "暗色",
+    "settings.theme.light": "亮色",
+    "settings.lang": "语言",
+    "settings.lang.zh": "中文",
+    "settings.lang.en": "English",
+    "help.title": "使用说明（MVP）",
+    "help.desc": "不需要系统开发权限，模拟你在网页上输入与点击。",
+    "help.step1": "打开目标系统的“新增/编辑”表单页面。",
+    "help.step2": "打开浏览器侧边栏：点击扩展图标→打开侧边栏。",
+    "help.step3": "选择 CSV / XLSX 文件（第一行是表头）。",
+    "help.step4": "在“选择列”里选中列名，点击“开始点选网页字段”，然后去网页上点对应输入框完成绑定。",
+    "help.step5": "点击“填充当前行”，逐行完成录入。",
+    "help.tipLabel": "提示：",
+    "help.tip": "保存/提交由用户手动完成，避免误操作。",
+    "log.title": "日志",
+    "log.desc": "运行过程与异常记录。",
+    "data.title": "1) 数据源",
+    "data.desc": "导入表格文件，使用第一行作为表头。",
+    "data.upload": "上传数据文件",
+    "data.noFile": "未选择",
+    "data.sheet": "Sheet（仅 XLSX）",
+    "data.rowRange": "行范围",
+    "map.title": "2) 字段映射",
+    "map.desc": "选择列→点选网页字段→完成映射。",
+    "map.selectCol": "选择列",
+    "map.pick": "开始点选网页字段",
+    "map.hint": "提示：点击网页中的输入框/下拉框/文本区域，即可绑定到当前列。",
+    "map.list": "映射列表",
+    "map.save": "保存到当前站点",
+    "map.clear": "清空映射",
+    "map.load": "载入站点配置",
+    "map.view": "查看站点配置",
+    "fill.title": "3) 网页填充",
+    "fill.desc": "逐行填充，用户手动确认保存/提交。",
+    "fill.rowSelect": "行选择",
+    "fill.filterField": "筛选字段",
+    "fill.keyword": "关键词（模糊匹配）",
+    "fill.keyword.ph": "例如：张三 / EMP-0001",
+    "fill.search": "查询",
+    "fill.result": "查询结果",
+    "fill.block": "填充",
+    "fill.preview": "预览当前行号 — 数据",
+    "fill.auto": "自动步进下一行数据",
+    "fill.step": "填充当前行",
+    "footer.text": "v0.1 MVP · Local-first · No cloud",
+    "footer.siteKey": "站点配置键",
+  },
+  en: {
+    "brand.sub": "Batch-fill any web form · CSV / XLSX",
+    "settings.title": "Settings",
+    "settings.theme": "Theme",
+    "settings.theme.dark": "Dark",
+    "settings.theme.light": "Light",
+    "settings.lang": "Language",
+    "settings.lang.zh": "中文",
+    "settings.lang.en": "English",
+    "help.title": "Quick Guide (MVP)",
+    "help.desc": "No system privileges needed. Simulates input and clicks on the page.",
+    "help.step1": "Open the target system’s new/edit form page.",
+    "help.step2": "Open the side panel: click the extension icon → open side panel.",
+    "help.step3": "Choose a CSV/XLSX file (first row is headers).",
+    "help.step4": "Select a column, click “Pick field on page”, then click the matching input on the page.",
+    "help.step5": "Click “Fill current row” to fill row by row.",
+    "help.tipLabel": "Tip:",
+    "help.tip": "Save/submit manually to avoid mistakes.",
+    "log.title": "Logs",
+    "log.desc": "Runtime events and errors.",
+    "data.title": "1) Data Source",
+    "data.desc": "Import a sheet. Use the first row as headers.",
+    "data.upload": "Upload data file",
+    "data.noFile": "No file",
+    "data.sheet": "Sheet (XLSX only)",
+    "data.rowRange": "Row range",
+    "map.title": "2) Field Mapping",
+    "map.desc": "Select column → pick field → map.",
+    "map.selectCol": "Select column",
+    "map.pick": "Pick field on page",
+    "map.hint": "Tip: click an input/select/textarea to bind it to current column.",
+    "map.list": "Mapping list",
+    "map.save": "Save to current site",
+    "map.clear": "Clear mapping",
+    "map.load": "Load site config",
+    "map.view": "View site configs",
+    "fill.title": "3) Web Fill",
+    "fill.desc": "Fill row by row. User confirms save/submit.",
+    "fill.rowSelect": "Row selection",
+    "fill.filterField": "Filter field",
+    "fill.keyword": "Keyword (fuzzy)",
+    "fill.keyword.ph": "e.g. John / EMP-0001",
+    "fill.search": "Search",
+    "fill.result": "Search results",
+    "fill.block": "Fill",
+    "fill.preview": "Preview row — data",
+    "fill.auto": "Auto-advance to next row",
+    "fill.step": "Fill current row",
+    "footer.text": "v0.1 MVP · Local-first · No cloud",
+    "footer.siteKey": "Site config key",
+  },
+};
+
+function applyLang(lang) {
+  const dict = i18n[lang] || i18n.zh;
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (dict[key]) el.textContent = dict[key];
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title");
+    if (dict[key]) el.setAttribute("title", dict[key]);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (dict[key]) el.setAttribute("placeholder", dict[key]);
+  });
+  state.lang = lang;
+}
+
+function setTheme(theme) {
+  ui.app.setAttribute("data-theme", theme);
+  chrome.storage.local.set({ "ui:theme": theme });
+  document.querySelectorAll(".seg-btn[data-theme-val]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.getAttribute("data-theme-val") === theme);
+  });
+}
+
+function setLang(lang) {
+  applyLang(lang);
+  chrome.storage.local.set({ "ui:lang": lang });
+  document.querySelectorAll(".seg-btn[data-lang]").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.getAttribute("data-lang") === lang);
+  });
+}
 
 function log(line) {
   const t = new Date().toLocaleTimeString();
@@ -71,10 +216,10 @@ function log(line) {
 }
 
 function setStatus({ stateText, progText, rowText, msg }) {
-  if (stateText) ui.stState.textContent = stateText;
-  if (progText) ui.stProg.textContent = progText;
-  if (rowText) ui.stRow.textContent = rowText;
-  if (msg) ui.stMsg.textContent = msg;
+  if (stateText && ui.stState) ui.stState.textContent = stateText;
+  if (progText && ui.stProg) ui.stProg.textContent = progText;
+  if (rowText && ui.stRow) ui.stRow.textContent = rowText;
+  if (msg && ui.stMsg) ui.stMsg.textContent = msg;
 }
 
 async function getActiveTab() {
@@ -103,21 +248,57 @@ async function safeSendToActiveTab(message) {
 
 function refreshColsUI() {
   ui.colSelect.innerHTML = "";
+  ui.filterField.innerHTML = "";
   state.data.headers.forEach((h, idx) => {
-    const opt = document.createElement("option");
-    opt.value = String(idx);
-    opt.textContent = h || `列${idx + 1}`;
-    ui.colSelect.appendChild(opt);
+    const label = h || `列${idx + 1}`;
+    const opt1 = document.createElement("option");
+    opt1.value = String(idx);
+    opt1.textContent = label;
+    ui.colSelect.appendChild(opt1);
+
+    const opt2 = document.createElement("option");
+    opt2.value = String(idx);
+    opt2.textContent = label;
+    ui.filterField.appendChild(opt2);
   });
+  ui.filterField.value = "0";
   ui.pillCols.textContent = `${state.data.headers.length} 列`;
   ui.pillRows.textContent = `${state.data.rows.length} 行`;
   updatePickIndicator();
+  updateFillIndicator();
 }
 
 function updatePickIndicator() {
   const hasSelection = state.data.headers.length > 0 && String(ui.colSelect.value || "").length > 0;
   const ready = hasSelection && !state.pick.active;
-  ui.btnPick.classList.toggle("pick-ready", ready);
+  ui.btnPick.classList.toggle("is-ready", ready);
+}
+
+function updateFillIndicator() {
+  const hasRows = state.data.rows.length > 0;
+  const hasMapping = state.mapping.length > 0;
+  const ready = hasRows && hasMapping;
+  ui.btnStep.classList.toggle("is-ready", ready);
+}
+
+function setupCardToggles() {
+  document.querySelectorAll(".card-hd").forEach((hd) => {
+    const btn = document.createElement("button");
+    btn.className = "card-toggle";
+    btn.type = "button";
+    btn.textContent = "v";
+    btn.setAttribute("aria-expanded", "true");
+    hd.appendChild(btn);
+
+    const card = hd.closest(".card");
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!card) return;
+      const collapsed = card.classList.toggle("collapsed");
+      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      btn.textContent = collapsed ? ">" : "v";
+    });
+  });
 }
 
 function setupModuleLayout() {
@@ -139,10 +320,13 @@ function updateRowRangeDefaults() {
   if (total > 0) {
     ui.rowStart.value = "2";
     ui.rowEnd.value = String(total + 1);
+    state.selection.currentRowIndex = 2;
   } else {
     ui.rowStart.value = "2";
     ui.rowEnd.value = "2";
+    state.selection.currentRowIndex = null;
   }
+  updateFillIndicator();
 }
 
 function refreshSheetUI() {
@@ -172,8 +356,11 @@ function refreshMappingUI() {
     empty.style.padding = "10px";
     empty.style.color = "var(--muted)";
     empty.style.fontSize = "12px";
-    empty.textContent = "暂无映射。选择一列并点选网页中的输入框。";
+    empty.textContent = state.lang === "en"
+      ? "No mapping yet. Select a column and pick a field on the page."
+      : "暂无映射。选择一列并点选网页中的输入框。";
     ui.mapList.appendChild(empty);
+    updateFillIndicator();
     return;
   }
 
@@ -183,13 +370,13 @@ function refreshMappingUI() {
 
     const badge = document.createElement("div");
     badge.className = "badge";
-    badge.textContent = `${m.col || "未命名列"}`;
+    badge.textContent = `${m.col || (state.lang === "en" ? "Unnamed" : "未命名列")}`;
 
     const meta = document.createElement("div");
     meta.className = "mapmeta";
     const t = document.createElement("div");
     t.className = "t";
-    t.textContent = `${m.meta?.label || m.meta?.placeholder || m.meta?.name || m.meta?.tag || "字段"}  ←  ${m.col}`;
+    t.textContent = `${m.meta?.label || m.meta?.placeholder || m.meta?.name || m.meta?.tag || (state.lang === "en" ? "Field" : "字段")} → ${m.col}`;
     const d = document.createElement("div");
     d.className = "d";
     d.textContent = m.selector;
@@ -199,7 +386,7 @@ function refreshMappingUI() {
 
     const x = document.createElement("button");
     x.className = "x";
-    x.textContent = "移除";
+    x.textContent = state.lang === "en" ? "Remove" : "移除";
     x.addEventListener("click", () => {
       state.mapping.splice(idx, 1);
       refreshMappingUI();
@@ -210,6 +397,8 @@ function refreshMappingUI() {
     wrap.appendChild(x);
     ui.mapList.appendChild(wrap);
   });
+
+  updateFillIndicator();
 }
 
 function getRowSlice() {
@@ -226,9 +415,13 @@ function getRowSlice() {
 
 function renderRowPreview(row, rowIndex) {
   if (rowIndex) {
-    ui.rowPreviewLabel.textContent = `当前行号 ${rowIndex}，预览`;
+    ui.rowPreviewLabel.textContent = state.lang === "en"
+      ? `Preview row ${rowIndex}`
+      : `预览当前行号 ${rowIndex} 数据`;
   } else {
-    ui.rowPreviewLabel.textContent = "当前行号 —，预览";
+    ui.rowPreviewLabel.textContent = state.lang === "en"
+      ? "Preview row —"
+      : "预览当前行号 — 数据";
   }
   if (!row || !row.length) {
     ui.rowPreviewHead.textContent = "—";
@@ -264,7 +457,6 @@ function parseCSV(text) {
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     const n = text[i + 1];
-
     if (inQ) {
       if (c === '"' && n === '"') { val += '"'; i++; continue; }
       if (c === '"') { inQ = false; continue; }
@@ -307,12 +499,14 @@ async function loadFile(file) {
     refreshColsUI();
     updateRowRangeDefaults();
     renderRowPreview(state.data.rows[0] || [], 2);
-    log(`已加载 CSV：${state.data.headers.length} 列，${state.data.rows.length} 行`);
+    log(state.lang === "en"
+      ? `Loaded CSV: ${state.data.headers.length} cols, ${state.data.rows.length} rows`
+      : `已加载CSV：${state.data.headers.length} 列，${state.data.rows.length} 行`);
     return;
   }
 
   if (ext === "xlsx") {
-    if (!window.XLSX) throw new Error("缺少 XLSX 解析库，请重新加载扩展。");
+    if (!window.XLSX) throw new Error(state.lang === "en" ? "Missing XLSX parser. Reload extension." : "缺少 XLSX 解析库，请重新加载扩展。" );
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: "array" });
     state.data.workbook = workbook;
@@ -321,11 +515,13 @@ async function loadFile(file) {
     refreshSheetUI();
     await reloadActiveSheetFromCurrentFile();
     renderRowPreview(state.data.rows[0] || [], 2);
-    log(`已加载 XLSX：${state.data.sheets.length} 个 Sheet`);
+    log(state.lang === "en"
+      ? `Loaded XLSX: ${state.data.sheets.length} sheets`
+      : `已加载XLSX：${state.data.sheets.length} 个 Sheet`);
     return;
   }
 
-  throw new Error("仅支持 .csv 或 .xlsx");
+  throw new Error(state.lang === "en" ? "Only .csv or .xlsx" : "仅支持 .csv 或 .xlsx");
 }
 
 function clearFileSelection() {
@@ -337,11 +533,13 @@ function clearFileSelection() {
     activeSheet: "",
     workbook: null,
   };
-  ui.fileNameText.textContent = "未选择";
+  ui.fileNameText.textContent = i18n[state.lang]["data.noFile"] || "未选择";
   ui.fileNameText.parentElement?.classList.remove("has-file");
   ui.fileInput.value = "";
   refreshSheetUI();
   refreshColsUI();
+  renderRowPreview([], null);
+  updateFillIndicator();
 }
 
 async function reloadActiveSheetFromCurrentFile() {
@@ -353,6 +551,8 @@ async function reloadActiveSheetFromCurrentFile() {
     state.data.headers = [];
     state.data.rows = [];
     refreshColsUI();
+    renderRowPreview([], null);
+    updateFillIndicator();
     return;
   }
   const all = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
@@ -376,7 +576,7 @@ async function saveSiteConfig() {
   state.runner.siteKey = key;
   const payload = { mapping: state.mapping };
   await chrome.storage.local.set({ ["site:" + key]: payload });
-  log("已保存站点配置：" + key);
+  log(state.lang === "en" ? "Saved site config: " + key : "已保存站点配置：" + key);
 }
 
 async function loadSiteConfig() {
@@ -385,24 +585,24 @@ async function loadSiteConfig() {
   const data = await chrome.storage.local.get("site:" + key);
   const payload = data?.["site:" + key];
   if (!payload) {
-    log("该站点暂无保存配置：" + key);
+    log(state.lang === "en" ? "No config for this site: " + key : "该站点暂无保存配置：" + key);
     return;
   }
   state.mapping = payload.mapping || [];
   refreshMappingUI();
-  log("已载入站点配置：" + key);
+  log(state.lang === "en" ? "Loaded site config: " + key : "已载入站点配置：" + key);
 }
 
 async function loadSiteConfigByKey(key) {
   const data = await chrome.storage.local.get("site:" + key);
   const payload = data?.["site:" + key];
   if (!payload) {
-    log("未找到站点配置：" + key);
+    log(state.lang === "en" ? "Config not found: " + key : "未找到站点配置：" + key);
     return;
   }
   state.mapping = payload.mapping || [];
   refreshMappingUI();
-  log("已载入站点配置：" + key);
+  log(state.lang === "en" ? "Loaded site config: " + key : "已载入站点配置：" + key);
 }
 
 async function renderSiteList() {
@@ -413,7 +613,7 @@ async function renderSiteList() {
   if (keys.length === 0) {
     const empty = document.createElement("div");
     empty.className = "site-meta";
-    empty.textContent = "暂无保存的站点配置。";
+    empty.textContent = state.lang === "en" ? "No saved site configs." : "暂无保存的站点配置。";
     ui.siteList.appendChild(empty);
     return;
   }
@@ -421,31 +621,29 @@ async function renderSiteList() {
   keys.sort();
   keys.forEach((k) => {
     const key = k.replace(/^site:/, "");
-    const payload = data[k] || {};
-    const mappingCount = payload.mapping?.length || 0;
 
     const row = document.createElement("div");
     row.className = "site-item";
+    row.title = state.lang === "en" ? "Click to load" : "点击载入";
+    row.addEventListener("click", () => loadSiteConfigByKey(key));
 
     const label = document.createElement("div");
     label.textContent = key;
 
-    const meta = document.createElement("div");
-    meta.className = "site-meta";
-    meta.textContent = `映射 ${mappingCount}`;
+    const del = document.createElement("button");
+    del.className = "site-del";
+    del.type = "button";
+    del.setAttribute("aria-label", state.lang === "en" ? "Delete config" : "删除配置");
+    del.title = state.lang === "en" ? "Delete" : "删除";
+    del.textContent = "";
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await chrome.storage.local.remove("site:" + key);
+      await renderSiteList();
+    });
 
-    const actions = document.createElement("div");
-    actions.className = "site-actions";
-
-    const btnLoad = document.createElement("button");
-    btnLoad.className = "btn ghost";
-    btnLoad.textContent = "载入";
-    btnLoad.addEventListener("click", () => loadSiteConfigByKey(key));
-
-    actions.appendChild(btnLoad);
     row.appendChild(label);
-    row.appendChild(meta);
-    row.appendChild(actions);
+    row.appendChild(del);
     ui.siteList.appendChild(row);
   });
 }
@@ -458,8 +656,8 @@ async function beginPick(mode) {
   const colIndex = parseInt(ui.colSelect.value || "0", 10);
   const colName = state.data.headers[colIndex] ?? `列${colIndex + 1}`;
 
-  setStatus({ stateText: "点选中", msg: "请到网页上点击目标元素…" });
-  log(`进入点选模式 (${mode})：请点击网页元素。`);
+  setStatus({ stateText: state.lang === "en" ? "Picking" : "点选中", msg: state.lang === "en" ? "Click the target element on the page." : "请到网页上点击目标元素。" });
+  log(state.lang === "en" ? `Pick mode (${mode}): click an element.` : `进入点选模式(${mode})：请点击网页元素。`);
 
   state.pick.active = true;
   updatePickIndicator();
@@ -473,8 +671,8 @@ async function beginPick(mode) {
     });
   } catch (e) {
     const msg = String(e?.message || e);
-    log(`点选启动失败：${msg}`);
-    setStatus({ stateText: "就绪", msg });
+    log(`${state.lang === "en" ? "Pick failed" : "点选启动失败"}：${msg}`);
+    setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg });
     state.pick.active = false;
     updatePickIndicator();
   }
@@ -484,26 +682,24 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "FB_PICK_RESULT") {
     const { mode, colIndex, colName, selector, meta } = msg.payload;
     if (mode !== "field") return;
-
     state.pick.active = false;
     updatePickIndicator();
-
     state.mapping = state.mapping.filter((m) => m.colIndex !== colIndex);
     state.mapping.push({ col: colName, colIndex, selector, meta });
     refreshMappingUI();
-    log(`已绑定：${colName} -> ${selector}`);
-    setStatus({ stateText: "就绪", msg: "字段已绑定。" });
+    log(state.lang === "en" ? `Bound: ${colName} -> ${selector}` : `已绑定：${colName} -> ${selector}`);
+    setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Field bound." : "字段已绑定。" });
   }
 
   if (msg?.type === "FB_PICK_CANCELLED") {
-    setStatus({ stateText: "就绪", msg: "已取消点选。" });
-    log("点选已取消。");
+    setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Pick cancelled." : "已取消点选。" });
+    log(state.lang === "en" ? "Pick cancelled." : "点选已取消。");
     state.pick.active = false;
     updatePickIndicator();
   }
 
   if (msg?.type === "FB_RUN_EVENT") {
-    log(msg.payload?.line || "运行事件");
+    log(msg.payload?.line || (state.lang === "en" ? "Run event" : "运行事件"));
   }
 });
 
@@ -515,137 +711,89 @@ function normalizeCell(v) {
 
 async function runBatch({ stepOnly = false }) {
   if (!state.data.rows.length) {
-    log("请先载入 CSV/XLSX。");
+    log(state.lang === "en" ? "Please load a CSV/XLSX file." : "请先载入 CSV/XLSX。" );
     return;
   }
   if (!state.mapping.length) {
-    log("请先配置字段映射。");
+    log(state.lang === "en" ? "Please configure field mapping." : "请先配置字段映射。" );
     return;
   }
 
-  state.runner.stop = false;
-  state.runner.paused = false;
   state.runner.running = true;
 
   const { start, rows } = getRowSlice();
   const total = rows.length;
 
-  renderRowPreview(rows[0] || [], start);
+  const current = state.selection.currentRowIndex ?? start;
+  if (current < start || current > start + total - 1) {
+    state.selection.currentRowIndex = start;
+  }
+  const idx = (state.selection.currentRowIndex ?? start) - start;
+  const globalRowIndex = start + idx;
+  const row = rows[idx];
 
   setStatus({
-    stateText: "单步",
-    progText: `0 / ${total}`,
-    msg: "开始执行…",
+    stateText: state.lang === "en" ? "Step" : "单步",
+    progText: `${idx + 1} / ${total}`,
+    rowText: state.lang === "en" ? `Row ${globalRowIndex}` : `第${globalRowIndex}行`,
+    msg: state.lang === "en" ? "Filling..." : "填充中…",
   });
-  log(`单步填充（从第${start}行，共${total}行）`);
+  renderRowPreview(row, globalRowIndex);
 
-  const tab = await getActiveTab();
-  if (!tab?.id) {
-    log("未找到活动标签页");
-    return;
-  }
+  const rowData = {};
+  state.data.headers.forEach((_, i) => (rowData[i] = normalizeCell(row[i] ?? "")));
 
-  for (let i = 0; i < total; i++) {
-    const globalRowIndex = start - 1 + i;
-    const row = rows[i];
+  const payload = {
+    mapping: state.mapping,
+    rowDataByColIndex: rowData,
+  };
 
-    renderRowPreview(row, globalRowIndex + 1);
-
-    setStatus({
-      progText: `${i + 1} / ${total}`,
-      rowText: `第${globalRowIndex + 1}行`,
-      msg: "填充中…",
-    });
-
-    const rowData = {};
-    state.data.headers.forEach((_, idx) => (rowData[idx] = normalizeCell(row[idx] ?? "")));
-
-    const payload = {
-      mapping: state.mapping,
-      rowDataByColIndex: rowData,
-    };
-
-    try {
-      const res = await safeSendToActiveTab({ type: "FB_FILL_ONE", payload });
-      if (res?.ok) {
-        state.runner.results.push({ i: globalRowIndex + 1, status: "OK", msg: res.message || "" });
-        setStatus({ msg: "成功" });
-        log(`✓ 第${globalRowIndex + 1}行成功`);
-      } else {
-        state.runner.results.push({ i: globalRowIndex + 1, status: "FAIL", msg: res?.error || "未知错误" });
-        setStatus({ msg: "失败：" + (res?.error || "未知错误") });
-        log(`✗ 第${globalRowIndex + 1}行失败：${res?.error || "未知错误"}`);
-      }
-    } catch (e) {
-      state.runner.results.push({ i: globalRowIndex + 1, status: "FAIL", msg: String(e?.message || e) });
-      setStatus({ msg: "失败：" + String(e?.message || e) });
-      log(`✗ 第${globalRowIndex + 1}行失败（通信异常）：${String(e?.message || e)}`);
+  try {
+    const res = await safeSendToActiveTab({ type: "FB_FILL_ONE", payload });
+    if (res?.ok) {
+      state.runner.results.push({ i: globalRowIndex, status: "OK", msg: res.message || "" });
+      setStatus({ msg: state.lang === "en" ? "Success" : "成功" });
+      log(state.lang === "en" ? `✓ Row ${globalRowIndex} success` : `✓ 第${globalRowIndex}行成功`);
+    } else {
+      const err = res?.error || (state.lang === "en" ? "Unknown error" : "未知错误");
+      state.runner.results.push({ i: globalRowIndex, status: "FAIL", msg: err });
+      setStatus({ msg: (state.lang === "en" ? "Failed: " : "失败：") + err });
+      log(state.lang === "en" ? `✗ Row ${globalRowIndex} failed: ${err}` : `✗ 第${globalRowIndex}行失败：${err}`);
     }
-
-    if (stepOnly) break;
+  } catch (e) {
+    const err = String(e?.message || e);
+    state.runner.results.push({ i: globalRowIndex, status: "FAIL", msg: err });
+    setStatus({ msg: (state.lang === "en" ? "Failed: " : "失败：") + err });
+    log(state.lang === "en" ? `✗ Row ${globalRowIndex} failed (comm error): ${err}` : `✗ 第${globalRowIndex}行失败（通信异常）：${err}`);
   }
 
   state.runner.running = false;
-  setStatus({ stateText: "就绪", msg: "完成" });
-  log("完成。");
-}
+  setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Done" : "完成" });
 
-function exportResultsCSV() {
-  const lines = [];
-  lines.push(["row", "status", "message"].join(","));
-  state.runner.results.forEach((r) => {
-    const safe = (s) => `"${String(s ?? "").replaceAll('"', '""')}"`;
-    lines.push([r.i, r.status, safe(r.msg)].join(","));
-  });
-  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "formbatcher_results.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  log("已导出结果 CSV。");
-}
-
-function toggleTheme() {
-  const cur = ui.app.getAttribute("data-theme") || "dark";
-  const next = cur === "dark" ? "light" : "dark";
-  ui.app.setAttribute("data-theme", next);
-  ui.btnTheme.querySelector(".ico").textContent = next === "dark" ? "☾" : "☀";
-  chrome.storage.local.set({ "ui:theme": next });
-}
-
-function setupCardToggles() {
-  document.querySelectorAll(".card-hd").forEach((hd) => {
-    const btn = document.createElement("button");
-    btn.className = "card-toggle";
-    btn.type = "button";
-    btn.textContent = "v";
-    btn.setAttribute("aria-expanded", "true");
-    hd.appendChild(btn);
-
-    const card = hd.closest(".card");
-    btn.addEventListener("click", () => {
-      if (!card) return;
-      const collapsed = card.classList.toggle("collapsed");
-      btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-      btn.textContent = collapsed ? ">" : "v";
-    });
-  });
+  if (stepOnly && ui.autoAdvance.checked) {
+    const next = globalRowIndex + 1;
+    if (next <= start + total - 1) {
+      state.selection.currentRowIndex = next;
+      renderRowPreview(rows[idx + 1] || [], next);
+    }
+  }
 }
 
 async function init() {
   setupModuleLayout();
   setupCardToggles();
 
-  const t = await chrome.storage.local.get("ui:theme");
-  const theme = t["ui:theme"] || "dark";
-  ui.app.setAttribute("data-theme", theme);
-  ui.btnTheme.querySelector(".ico").textContent = theme === "dark" ? "☾" : "☀";
+  const stored = await chrome.storage.local.get(["ui:theme", "ui:lang"]);
+  const theme = stored["ui:theme"] || "dark";
+  const lang = stored["ui:lang"] || "zh";
+  setTheme(theme);
+  setLang(lang);
 
   refreshSheetUI();
   refreshMappingUI();
-  setStatus({ stateText: "就绪", progText: "0 / 0", rowText: "—", msg: "—" });
+  setStatus({ stateText: lang === "en" ? "Ready" : "就绪", progText: "0 / 0", rowText: "—", msg: "—" });
+  updatePickIndicator();
+  updateFillIndicator();
 
   ui.fileInput.addEventListener("change", async () => {
     const f = ui.fileInput.files?.[0];
@@ -653,7 +801,7 @@ async function init() {
     try {
       await loadFile(f);
     } catch (e) {
-      log("载入失败：" + String(e?.message || e));
+      log((state.lang === "en" ? "Load failed: " : "载入失败：") + String(e?.message || e));
     }
   });
 
@@ -669,7 +817,7 @@ async function init() {
     try {
       await reloadActiveSheetFromCurrentFile();
     } catch (e) {
-      log("切换 Sheet 失败：" + String(e?.message || e));
+      log((state.lang === "en" ? "Switch sheet failed: " : "切换 Sheet 失败：") + String(e?.message || e));
     }
   });
 
@@ -683,7 +831,7 @@ async function init() {
   ui.btnClearMap.addEventListener("click", () => {
     state.mapping = [];
     refreshMappingUI();
-    log("已清空映射。");
+    log(state.lang === "en" ? "Mapping cleared." : "已清空映射。");
   });
 
   ui.btnLoadSite.addEventListener("click", loadSiteConfig);
@@ -691,24 +839,93 @@ async function init() {
     const show = ui.siteList.style.display === "none";
     if (show) await renderSiteList();
     ui.siteList.style.display = show ? "block" : "none";
+    ui.btnViewSites.classList.toggle("is-active", show);
+  });
+
+  ui.btnFilter.addEventListener("click", () => {
+    ui.filterTitle.style.display = "block";
+    const fieldIndex = parseInt(ui.filterField.value || "0", 10);
+    const keyword = String(ui.filterKeyword.value || "").trim().toLowerCase();
+    const { start, rows } = getRowSlice();
+    const hits = [];
+    rows.forEach((row, i) => {
+      const cell = String(row[fieldIndex] ?? "").toLowerCase();
+      if (!keyword || cell.includes(keyword)) {
+        hits.push({ excelRow: start + i, row });
+      }
+    });
+
+    ui.filterList.innerHTML = "";
+    if (hits.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "site-meta";
+      empty.textContent = state.lang === "en" ? "No matches." : "未找到匹配行。";
+      ui.filterList.appendChild(empty);
+      ui.filterList.style.display = "block";
+      return;
+    }
+
+    hits.slice(0, 50).forEach((hit) => {
+      const item = document.createElement("div");
+      item.className = "filter-item";
+      item.addEventListener("click", () => {
+        state.selection.currentRowIndex = hit.excelRow;
+        renderRowPreview(hit.row, hit.excelRow);
+        ui.filterList.style.display = "none";
+      });
+
+      const num = document.createElement("div");
+      num.className = "filter-rownum";
+      num.textContent = state.lang === "en" ? `Row ${hit.excelRow}` : `第${hit.excelRow}行`;
+
+      const text = document.createElement("div");
+      text.className = "filter-text";
+      text.textContent = String(hit.row[fieldIndex] ?? "");
+
+      item.appendChild(num);
+      item.appendChild(text);
+      ui.filterList.appendChild(item);
+    });
+
+    ui.filterList.style.display = "block";
   });
 
   ui.btnStep.addEventListener("click", () => runBatch({ stepOnly: true }));
-  ui.btnExport.addEventListener("click", exportResultsCSV);
-  ui.btnTheme.addEventListener("click", toggleTheme);
 
   ui.btnHelp.addEventListener("click", () => {
     const show = ui.helpCard.style.display === "none";
     ui.helpCard.style.display = show ? "block" : "none";
   });
 
+  ui.btnSettings.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const show = ui.settingsPanel.style.display === "none";
+    ui.settingsPanel.style.display = show ? "block" : "none";
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!ui.settingsPanel || ui.settingsPanel.style.display === "none") return;
+    if (ui.settingsPanel.contains(e.target) || ui.btnSettings.contains(e.target)) return;
+    ui.settingsPanel.style.display = "none";
+  });
+
+  document.querySelectorAll(".seg-btn[data-theme-val]").forEach((btn) => {
+    btn.addEventListener("click", () => setTheme(btn.getAttribute("data-theme-val")));
+  });
+  document.querySelectorAll(".seg-btn[data-lang]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setLang(btn.getAttribute("data-lang"));
+      refreshMappingUI();
+    });
+  });
+
   $("#openOptions").addEventListener("click", async (e) => {
     e.preventDefault();
     const key = await computeSiteKey();
-    log("当前站点键：" + key);
+    log((state.lang === "en" ? "Current site key: " : "当前站点键：") + key);
   });
 
-  log("FormBatcher MVP 已就绪。打开目标表单页面后开始配置。");
+  log(state.lang === "en" ? "FormBatcher MVP ready. Open target form page." : "FormBatcher MVP 已就绪。打开目标表单页面后开始配置。");
 }
 
 init();

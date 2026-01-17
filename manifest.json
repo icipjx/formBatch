@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "FormBatcher MVP",
+  "name": "FormBatcher",
   "version": "0.1.0",
   "description": "Batch fill web forms from CSV/XLSX with configurable field mapping and optional auto-submit.",
   "permissions": [
