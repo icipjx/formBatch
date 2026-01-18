@@ -126,7 +126,7 @@
               <button class="group-toggle" type="button" aria-expanded="true">v</button>
             </div>
             <div class="group-body">
-              <div class="label">文件数据列</div>
+              <div class="label" data-i18n="map.fileCols">文件数据列</div>
               <select id="colSelect" class="input"></select>
 
               <button class="btn primary" id="btnPick">
@@ -186,7 +186,7 @@
           <div class="card-desc" data-i18n="fill.desc">逐行填充，用户手动确认保存/提交。</div>
         </div>
         <div class="card-bd">
-          <div class="group">
+          <div class="group collapsed">
             <div class="group-hd">
               <div class="label" data-i18n="fill.rowSelect">手动选择填充行</div>
               <button class="group-toggle" type="button" aria-expanded="true">v</button>
@@ -221,24 +221,18 @@
                 <select id="identityStrategy" class="input">
                   <option value="exact" data-i18n="identity.strategy.exact">完全一致</option>
                   <option value="contains" data-i18n="identity.strategy.contains">包含匹配</option>
-                  <option value="normalize" data-i18n="identity.strategy.normalize">标准化匹配</option>
                 </select>
-              </div>
-
-              <div class="identity-options">
-                <label><input type="checkbox" id="idOptTrim" checked /> <span data-i18n="identity.opt.trim">去空格</span></label>
-                <label><input type="checkbox" id="idOptLower" checked /> <span data-i18n="identity.opt.lower">忽略大小写</span></label>
-                <label><input type="checkbox" id="idOptCollapse" checked /> <span data-i18n="identity.opt.collapse">合并多空格</span></label>
               </div>
 
               <button class="btn" id="btnMatchIdentity" data-i18n="identity.match">自动匹配当前页面行</button>
               <div class="small identity-status" id="identityStatus">—</div>
+              <div class="label filter-title" id="identityMatchTitle" style="display:none;" data-i18n="identity.matches">匹配结果</div>
+              <div class="filter-list" id="identityMatchList" style="display:none;"></div>
             </div>
           </div>
 
           <div class="group mt">
             <div class="label" data-i18n="fill.block">填充</div>
-            <div class="small" id="rowPreviewLabel" data-i18n="fill.preview">预览当前行号 — 数据</div>
             <div class="toggle mt1">
               <input type="checkbox" id="autoAdvance" />
               <label for="autoAdvance" data-i18n="fill.auto">自动步进下一行数据</label>

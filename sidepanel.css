@@ -493,6 +493,12 @@ body{
   border-radius:12px;
   padding:6px 8px;
   cursor:pointer;
+  min-width:44px;
+  height:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
 }
 .site-list{
   margin-top:8px;

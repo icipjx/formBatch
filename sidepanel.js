@@ -36,7 +36,6 @@ const ui = {
   btnHelp: $("#btnHelp"),
   helpCard: $("#helpCard"),
   btnClearFile: $("#btnClearFile"),
-  rowPreviewLabel: $("#rowPreviewLabel"),
   rowPreviewHead: $("#rowPreviewHead"),
   rowPreviewBody: $("#rowPreviewBody"),
   autoAdvance: $("#autoAdvance"),
@@ -49,12 +48,11 @@ const ui = {
   identityColSelect: $("#identityColSelect"),
   btnPickIdentity: $("#btnPickIdentity"),
   identityStrategy: $("#identityStrategy"),
-  idOptTrim: $("#idOptTrim"),
-  idOptLower: $("#idOptLower"),
-  idOptCollapse: $("#idOptCollapse"),
   btnMatchIdentity: $("#btnMatchIdentity"),
   identityStatus: $("#identityStatus"),
   identityMapList: $("#identityMapList"),
+  identityMatchTitle: $("#identityMatchTitle"),
+  identityMatchList: $("#identityMatchList"),
 };
 
 const state = {
@@ -74,6 +72,7 @@ const state = {
   },
   pick: {
     active: false,
+    mode: null,
   },
   selection: {
     currentRowIndex: null, // Excel row number
@@ -115,6 +114,7 @@ const i18n = {
     "map.pick": "开始点选网页数据列字段",
     "map.hint": "提示：点击网页中的输入框/下拉框/文本区域，即可绑定到当前列。",
     "map.list": "数据列映射列表",
+    "map.fileCols": "文件数据列",
     "map.save": "保存到当前站点",
     "map.clear": "清空映射",
     "map.load": "载入站点配置",
@@ -127,12 +127,9 @@ const i18n = {
     "identity.hint": "提示：点击网页任意元素，绑定数据身份列，实现当前页面自动选择填充数据行。",
     "identity.strategy": "匹配策略",
     "identity.autoTitle": "自动匹配填充行",
+    "identity.matches": "匹配结果",
     "identity.strategy.exact": "完全一致",
     "identity.strategy.contains": "包含匹配",
-    "identity.strategy.normalize": "标准化匹配",
-    "identity.opt.trim": "去空格",
-    "identity.opt.lower": "忽略大小写",
-    "identity.opt.collapse": "合并多空格",
     "identity.match": "自动匹配当前页面行",
     "fill.title": "3) 网页填充",
     "fill.desc": "逐行填充，用户手动确认保存/提交。",
@@ -181,6 +178,7 @@ const i18n = {
     "map.pick": "Pick data field on page",
     "map.hint": "Tip: click an input/select/textarea to bind it to current column.",
     "map.list": "Data mapping list",
+    "map.fileCols": "File data columns",
     "map.save": "Save to current site",
     "map.clear": "Clear mapping",
     "map.load": "Load site config",
@@ -193,12 +191,9 @@ const i18n = {
     "identity.hint": "Tip: click any element to bind the identity column and auto-locate the row.",
     "identity.strategy": "Match strategy",
     "identity.autoTitle": "Auto match row",
+    "identity.matches": "Match results",
     "identity.strategy.exact": "Exact",
     "identity.strategy.contains": "Contains",
-    "identity.strategy.normalize": "Normalize",
-    "identity.opt.trim": "Trim",
-    "identity.opt.lower": "Lowercase",
-    "identity.opt.collapse": "Collapse spaces",
     "identity.match": "Match row on current page",
     "fill.title": "3) Web Fill",
     "fill.desc": "Fill row by row. User confirms save/submit.",
@@ -320,25 +315,29 @@ function refreshColsUI() {
 
 function updatePickIndicator() {
   const hasSelection = state.data.headers.length > 0 && String(ui.colSelect.value || "").length > 0;
-  const ready = hasSelection && !state.pick.active;
-  ui.btnPick.classList.toggle("is-ready", ready);
-  ui.btnPick.disabled = !ready;
+  const active = state.pick.active && state.pick.mode === "field";
+  ui.btnPick.classList.toggle("is-ready", active);
+  ui.btnPick.disabled = !hasSelection;
+  const label = ui.btnPick.querySelector("[data-i18n=\"map.pick\"]");
+  if (label) {
+    label.textContent = active
+      ? (state.lang === "en" ? "Cancel pick" : "取消点选")
+      : (state.lang === "en" ? "Pick data field on page" : "开始点选网页数据列字段");
+  }
 }
 
 function updateIdentityIndicator() {
   if (!ui.btnPickIdentity || !ui.identityColSelect) return;
   const hasSelection = state.data.headers.length > 0 && String(ui.identityColSelect.value || "").length > 0;
-  const ready = hasSelection && !state.pick.active;
-  ui.btnPickIdentity.classList.toggle("is-ready", ready);
-  ui.btnPickIdentity.disabled = !ready;
-}
-
-function getIdentityNormalizeOptions() {
-  return {
-    trim: !!ui.idOptTrim?.checked,
-    lower: !!ui.idOptLower?.checked,
-    collapseSpaces: !!ui.idOptCollapse?.checked,
-  };
+  const active = state.pick.active && state.pick.mode === "identity";
+  ui.btnPickIdentity.classList.toggle("is-ready", active);
+  ui.btnPickIdentity.disabled = !hasSelection;
+  const label = ui.btnPickIdentity.querySelector("[data-i18n=\"identity.pick\"]");
+  if (label) {
+    label.textContent = active
+      ? (state.lang === "en" ? "Cancel pick" : "取消点选")
+      : (state.lang === "en" ? "Pick identity column on page" : "开始点选网页身份列字段");
+  }
 }
 
 function updateIdentityUI() {
@@ -347,10 +346,18 @@ function updateIdentityUI() {
     renderIdentityMappingUI();
     return;
   }
+  if (ui.identityColSelect) {
+    if (typeof state.identityMapping.colIndex === "number") {
+      ui.identityColSelect.value = String(state.identityMapping.colIndex);
+    } else if (state.identityMapping.colName) {
+      const idx = state.data.headers.findIndex((h) => h === state.identityMapping.colName);
+      if (idx >= 0) {
+        state.identityMapping.colIndex = idx;
+        ui.identityColSelect.value = String(idx);
+      }
+    }
+  }
   if (ui.identityStrategy) ui.identityStrategy.value = state.identityMapping.matchStrategy || "exact";
-  if (ui.idOptTrim) ui.idOptTrim.checked = !!state.identityMapping.normalize?.trim;
-  if (ui.idOptLower) ui.idOptLower.checked = !!state.identityMapping.normalize?.lower;
-  if (ui.idOptCollapse) ui.idOptCollapse.checked = !!state.identityMapping.normalize?.collapseSpaces;
   renderIdentityMappingUI();
 }
 
@@ -558,26 +565,21 @@ function getRowSlice() {
 }
 
 function renderRowPreview(row, rowIndex) {
-  if (rowIndex) {
-    ui.rowPreviewLabel.textContent = state.lang === "en"
-      ? `Preview row ${rowIndex}`
-      : `预览当前行号 ${rowIndex} 数据`;
-  } else {
-    ui.rowPreviewLabel.textContent = state.lang === "en"
-      ? "Preview row —"
-      : "预览当前行号 — 数据";
-  }
   if (!row || !row.length) {
     ui.rowPreviewHead.textContent = "—";
     ui.rowPreviewBody.textContent = "—";
     return;
   }
-  const headers = state.data.headers.map((h, i) => h || `列${i + 1}`);
+  const headers = [state.lang === "en" ? "Row" : "行号"].concat(
+    state.data.headers.map((h, i) => h || `列${i + 1}`)
+  );
   const body = row.map((v) => String(v ?? "").trim());
-  const cols = Math.max(headers.length, body.length);
+  const cols = Math.max(headers.length, body.length + 1);
 
+  const rowNum = rowIndex ? String(rowIndex) : "—";
+  const bodyWithRow = [rowNum].concat(body);
   ui.rowPreviewHead.innerHTML = headers.map((h) => `<span class="row-preview-cell">${h}</span>`).join("");
-  ui.rowPreviewBody.innerHTML = body.map((v) => `<span class="row-preview-cell">${v || "—"}</span>`).join("");
+  ui.rowPreviewBody.innerHTML = bodyWithRow.map((v) => `<span class="row-preview-cell">${v || "—"}</span>`).join("");
 
   const headCells = Array.from(ui.rowPreviewHead.children);
   const bodyCells = Array.from(ui.rowPreviewBody.children);
@@ -592,14 +594,6 @@ function renderRowPreview(row, rowIndex) {
   }
 }
 
-function normalizeIdentityValue(val, opts) {
-  let s = String(val ?? "");
-  if (opts?.trim) s = s.trim();
-  if (opts?.collapseSpaces) s = s.replace(/\s+/g, " ");
-  if (opts?.lower) s = s.toLowerCase();
-  return s;
-}
-
 async function matchIdentityRow() {
   if (!state.identityMapping?.selector) {
     if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No identity mapping yet." : "尚未绑定页面身份字段。";
@@ -611,10 +605,8 @@ async function matchIdentityRow() {
   }
   const colIndex = parseInt(ui.identityColSelect?.value || state.identityMapping.colIndex || "0", 10);
   const strategy = ui.identityStrategy?.value || state.identityMapping.matchStrategy || "exact";
-  const normalize = getIdentityNormalizeOptions();
   state.identityMapping.colIndex = colIndex;
   state.identityMapping.matchStrategy = strategy;
-  state.identityMapping.normalize = normalize;
 
   let pageValue = "";
   try {
@@ -646,17 +638,51 @@ async function matchIdentityRow() {
       if (cellStr.includes(pageValue) || pageValue.includes(cellStr)) matches.push(idx);
       return;
     }
-    const left = normalizeIdentityValue(cellStr, normalize);
-    const right = normalizeIdentityValue(pageValue, normalize);
-    if (left && right && left === right) matches.push(idx);
   });
 
   if (matches.length === 0) {
     if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No match found." : "未匹配到，请检查映射或数据。";
+    renderRowPreview([], null);
+    if (ui.identityMatchTitle) ui.identityMatchTitle.style.display = "none";
+    if (ui.identityMatchList) ui.identityMatchList.style.display = "none";
     return;
   }
   if (matches.length > 1) {
-    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? `Matched ${matches.length} rows. Use a unique column.` : `匹配到 ${matches.length} 条，请使用更唯一的列。`;
+    if (ui.identityStatus) {
+      ui.identityStatus.textContent = state.lang === "en"
+        ? `Matched ${matches.length} rows. Please choose one.`
+        : `匹配到 ${matches.length} 条，请选择一条。`;
+    }
+    renderRowPreview([], null);
+    if (ui.identityMatchTitle) ui.identityMatchTitle.style.display = "block";
+    if (ui.identityMatchList) {
+      ui.identityMatchList.innerHTML = "";
+      const { start } = getRowSlice();
+      matches.slice(0, 50).forEach((idx) => {
+        const excelRow = idx + 2;
+        const item = document.createElement("div");
+        item.className = "filter-item";
+        item.addEventListener("click", () => {
+          state.selection.currentRowIndex = excelRow;
+          renderRowPreview(state.data.rows[idx] || [], excelRow);
+          ui.identityMatchList.style.display = "none";
+        });
+
+        const num = document.createElement("div");
+        num.className = "filter-rownum";
+        num.textContent = state.lang === "en" ? `Row ${excelRow}` : `第${excelRow}行`;
+
+        const text = document.createElement("div");
+        text.className = "filter-text";
+        const rowVals = (state.data.rows[idx] || []).map((v) => String(v ?? "").trim()).filter((v) => v !== "");
+        text.textContent = rowVals.join(" | ");
+
+        item.appendChild(num);
+        item.appendChild(text);
+        ui.identityMatchList.appendChild(item);
+      });
+      ui.identityMatchList.style.display = "block";
+    }
     return;
   }
 
@@ -664,6 +690,8 @@ async function matchIdentityRow() {
   state.selection.currentRowIndex = rowIndex;
   renderRowPreview(state.data.rows[matches[0]] || [], rowIndex);
   if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? `Matched row ${rowIndex}: ${pageValue}` : `已匹配到第 ${rowIndex} 行：${pageValue}`;
+  if (ui.identityMatchTitle) ui.identityMatchTitle.style.display = "none";
+  if (ui.identityMatchList) ui.identityMatchList.style.display = "none";
 }
 
 // -------- Data parsing --------
@@ -875,15 +903,31 @@ async function beginPick(mode) {
   const tab = await getActiveTab();
   if (!tab?.id) return;
 
+  if (state.pick.active) {
+    await cancelPick();
+    return;
+  }
+
   const colIndex = mode === "identity"
     ? parseInt(ui.identityColSelect?.value || "0", 10)
     : parseInt(ui.colSelect.value || "0", 10);
   const colName = state.data.headers[colIndex] ?? `列${colIndex + 1}`;
 
+  if (mode === "field") {
+    const exists = state.mapping.find((m) => m.colIndex === colIndex);
+    if (exists) {
+      const msg = state.lang === "en"
+        ? `${colName} already has a mapping. Pick again?`
+        : `${colName}列已存在映射关系，是否重新点选？`;
+      if (!window.confirm(msg)) return;
+    }
+  }
+
   setStatus({ stateText: state.lang === "en" ? "Picking" : "点选中", msg: state.lang === "en" ? "Click the target element on the page." : "请到网页上点击目标元素。" });
   log(state.lang === "en" ? `Pick mode (${mode}): click an element.` : `进入点选模式(${mode})：请点击网页元素。`);
 
   state.pick.active = true;
+  state.pick.mode = mode;
   updatePickIndicator();
   updateIdentityIndicator();
 
@@ -899,15 +943,34 @@ async function beginPick(mode) {
     log(`${state.lang === "en" ? "Pick failed" : "点选启动失败"}：${msg}`);
     setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg });
     state.pick.active = false;
+    state.pick.mode = null;
     updatePickIndicator();
     updateIdentityIndicator();
   }
+}
+
+async function cancelPick() {
+  try {
+    await safeSendToActiveTab({ type: "FB_CANCEL_PICK" });
+  } catch (_) {
+    // ignore cancel errors
+  }
+  state.pick.active = false;
+  state.pick.mode = null;
+  updatePickIndicator();
+  updateIdentityIndicator();
+  setStatus({
+    stateText: state.lang === "en" ? "Ready" : "就绪",
+    msg: state.lang === "en" ? "Pick cancelled." : "已取消点选。",
+  });
+  log(state.lang === "en" ? "Pick cancelled." : "点选已取消。");
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "FB_PICK_RESULT") {
     const { mode, colIndex, colName, selector, meta } = msg.payload;
     state.pick.active = false;
+    state.pick.mode = null;
     updatePickIndicator();
     updateIdentityIndicator();
 
@@ -915,6 +978,11 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.mapping = state.mapping.filter((m) => m.colIndex !== colIndex);
       state.mapping.push({ col: colName, colIndex, selector, meta });
       refreshMappingUI();
+      if (state.data.headers.length > 0) {
+        const nextIndex = Math.min(colIndex + 1, state.data.headers.length - 1);
+        ui.colSelect.value = String(nextIndex);
+        updatePickIndicator();
+      }
       log(state.lang === "en" ? `Bound: ${colName} -> ${selector}` : `已绑定：${colName} -> ${selector}`);
       setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Field bound." : "字段已绑定。" });
       return;
@@ -927,7 +995,6 @@ chrome.runtime.onMessage.addListener((msg) => {
         selector,
         meta,
         matchStrategy: ui.identityStrategy?.value || "exact",
-        normalize: getIdentityNormalizeOptions(),
       };
       updateIdentityUI();
       if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "Identity field bound." : "身份字段已绑定。";
@@ -939,6 +1006,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     setStatus({ stateText: state.lang === "en" ? "Ready" : "就绪", msg: state.lang === "en" ? "Pick cancelled." : "已取消点选。" });
     log(state.lang === "en" ? "Pick cancelled." : "点选已取消。");
     state.pick.active = false;
+    state.pick.mode = null;
     updatePickIndicator();
     updateIdentityIndicator();
   }
@@ -1106,13 +1174,6 @@ async function init() {
       state.identityMapping.matchStrategy = ui.identityStrategy.value;
     });
   }
-  [ui.idOptTrim, ui.idOptLower, ui.idOptCollapse].forEach((el) => {
-    if (!el) return;
-    el.addEventListener("change", () => {
-      if (!state.identityMapping) return;
-      state.identityMapping.normalize = getIdentityNormalizeOptions();
-    });
-  });
   if (ui.btnMatchIdentity) ui.btnMatchIdentity.addEventListener("click", matchIdentityRow);
 
   ui.btnFilter.addEventListener("click", () => {

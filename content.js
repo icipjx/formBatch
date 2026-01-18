@@ -6,6 +6,7 @@
 
 let pickSession = null; // {mode, colIndex, colName}
 let hoverBox = null;
+let pickLabel = null;
 
 function cssEscapeIdent(ident) {
   return ident.replace(/([ !"#$%&'()*+,./:;<=>?@[\]^`{|}~\\])/g, "\\$1");
@@ -221,6 +222,39 @@ function fillOne(payload) {
   return { ok: true, message: "done" };
 }
 
+function ensurePickLabel() {
+  if (pickLabel) return pickLabel;
+  pickLabel = document.createElement("div");
+  pickLabel.style.position = "fixed";
+  pickLabel.style.zIndex = "2147483647";
+  pickLabel.style.pointerEvents = "none";
+  pickLabel.style.padding = "4px 8px";
+  pickLabel.style.borderRadius = "8px";
+  pickLabel.style.fontSize = "12px";
+  pickLabel.style.fontFamily = "Segoe UI, Arial, sans-serif";
+  pickLabel.style.background = "rgba(12,18,40,.85)";
+  pickLabel.style.color = "#e9eefc";
+  pickLabel.style.boxShadow = "0 6px 16px rgba(0,0,0,.25)";
+  pickLabel.style.transform = "translate(12px, 12px)";
+  document.documentElement.appendChild(pickLabel);
+  return pickLabel;
+}
+
+function updatePickLabel(e) {
+  if (!pickSession) return;
+  const label = ensurePickLabel();
+  const name = pickSession.colName || "";
+  label.textContent = name || "";
+  label.style.left = `${e.clientX}px`;
+  label.style.top = `${e.clientY}px`;
+}
+
+function clearPickLabel() {
+  if (!pickLabel) return;
+  pickLabel.remove();
+  pickLabel = null;
+}
+
 function onPickClick(e) {
   if (!pickSession) return;
   let target = e.target;
@@ -263,6 +297,7 @@ function onPickClick(e) {
 
 function onPickMove(e) {
   if (!pickSession) return;
+  updatePickLabel(e);
   let target = e.target;
   if (pickSession.mode !== "identity") {
     for (let i = 0; i < 4 && target && !isFillable(target); i++) {
@@ -281,6 +316,7 @@ function endPick() {
   window.removeEventListener("keydown", onPickEsc, true);
   document.documentElement.style.cursor = "";
   clearHoverBox();
+  clearPickLabel();
 }
 
 function onPickEsc(e) {
@@ -301,6 +337,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       type: "FB_RUN_EVENT",
       payload: { line: "进入点选模式：请点击输入框/下拉框/文本域" },
     });
+    sendResponse({ ok: true });
+    return true;
+  }
+
+  if (msg?.type === "FB_CANCEL_PICK") {
+    endPick();
     sendResponse({ ok: true });
     return true;
   }
