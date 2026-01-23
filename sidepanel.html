@@ -49,15 +49,14 @@
       <section class="card" id="helpCard" style="display:none;">
         <div class="card-hd">
           <div class="card-title" data-i18n="help.title">使用说明（MVP）</div>
-          <div class="card-desc" data-i18n="help.desc">不需要系统开发权限，模拟你在网页上输入与点击。</div>
         </div>
         <div class="card-bd">
           <ol class="help">
-            <li data-i18n="help.step1">打开目标系统的“新增/编辑”表单页面。</li>
-            <li data-i18n="help.step2">打开浏览器侧边栏：点击扩展图标→打开侧边栏。</li>
-            <li data-i18n="help.step3">选择 CSV / XLSX 文件（第一行是表头）。</li>
-            <li data-i18n="help.step4">在“选择列”里选中列名，点击“开始点选网页字段”，然后去网页上点对应输入框完成绑定。</li>
-            <li data-i18n="help.step5">点击“填充当前行”，逐行完成录入。</li>
+            <li data-i18n-html="help.step1">打开目标系统的“新增/编辑”表单页面。</li>
+            <li data-i18n-html="help.step2">打开浏览器侧边栏：点击扩展图标→打开侧边栏。</li>
+            <li data-i18n-html="help.step3">选择 CSV / XLSX 文件（第一行是表头）。</li>
+            <li data-i18n-html="help.step4">在“选择列”里选中列名，点击“开始点选网页字段”，然后去网页上点对应输入框完成绑定。</li>
+            <li data-i18n-html="help.step5">点击“填充当前行”，逐行完成录入。</li>
           </ol>
           <div class="tip">
             <b data-i18n="help.tipLabel">提示：</b><span data-i18n="help.tip">保存/提交由用户手动完成，避免误操作。</span>
@@ -133,6 +132,7 @@
                 <span class="dot"></span>
                 <span data-i18n="map.pick">开始点选网页数据列字段</span>
               </button>
+              <div class="fill-alert" id="mapPickAlert" style="display:none"></div>
 
               <div class="hint" id="pickHint" data-i18n="map.hint">
                 提示：点击网页中的输入框/下拉框/文本区域，即可绑定到当前列。
@@ -160,6 +160,7 @@
                 <span class="dot"></span>
                 <span data-i18n="identity.pick">开始点选网页身份列字段</span>
               </button>
+              <div class="fill-alert" id="identityPickAlert" style="display:none"></div>
 
               <div class="hint" id="identityHint" data-i18n="identity.hint">
                 提示：点击网页任意元素，绑定数据身份列，实现当前页面自动选择填充数据行。
@@ -249,6 +250,7 @@
               </button>
               <button class="btn ghost" id="btnNextRow" data-i18n="fill.next">下一条</button>
             </div>
+            <div class="fill-alert" id="fillAlert" style="display:none"></div>
           </div>
         </div>
       </section>

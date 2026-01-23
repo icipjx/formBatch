@@ -422,6 +422,9 @@ body{
 .identity-status{
   margin-top:2px;
 }
+.identity-status.is-warn{
+  color:var(--danger);
+}
 [data-theme="light"] .identity-meta{
   color:#3b4b70;
   background: rgba(255,255,255,.6);
@@ -431,6 +434,11 @@ body{
 }
 .hint{color:var(--muted); font-size:12px; margin-top:10px; line-height:1.35}
 .hint.hint-tight{margin-top:4px}
+.fill-alert{
+  margin-top:6px;
+  color:var(--danger);
+  font-size:12px;
+}
 [data-theme="light"] .field .label,
 [data-theme="light"] .label,
 [data-theme="light"] .hint,
@@ -627,6 +635,7 @@ body{
 .toggle{display:flex; gap:10px; align-items:center; font-size:13px}
 .toggle input{accent-color: var(--accent)}
 .small{color:var(--muted); font-size:12px}
+.small.identity-status.is-warn{color:var(--danger)}
 .status{
   border:1px solid var(--border);
   border-radius:16px;

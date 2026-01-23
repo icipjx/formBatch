@@ -20,6 +20,7 @@ const ui = {
   btnPick: $("#btnPick"),
   pickHint: $("#pickHint"),
   mapList: $("#mapList"),
+  mapPickAlert: $("#mapPickAlert"),
   btnSaveMap: $("#btnSaveMap"),
   btnClearMap: $("#btnClearMap"),
   btnLoadSite: $("#btnLoadSite"),
@@ -27,6 +28,7 @@ const ui = {
   siteList: $("#siteList"),
   btnStep: $("#btnStep"),
   btnNextRow: $("#btnNextRow"),
+  fillAlert: $("#fillAlert"),
   stState: $("#stState"),
   stProg: $("#stProg"),
   stRow: $("#stRow"),
@@ -48,6 +50,7 @@ const ui = {
   settingsPanel: $("#settingsPanel"),
   identityColSelect: $("#identityColSelect"),
   btnPickIdentity: $("#btnPickIdentity"),
+  identityPickAlert: $("#identityPickAlert"),
   identityStrategy: $("#identityStrategy"),
   btnMatchIdentity: $("#btnMatchIdentity"),
   identityStatus: $("#identityStatus"),
@@ -92,19 +95,19 @@ const i18n = {
     "settings.lang": "语言",
     "settings.lang.zh": "中文",
     "settings.lang.en": "English",
-    "help.title": "使用说明（MVP）",
-    "help.desc": "不需要系统开发权限，模拟你在网页上输入与点击。",
-    "help.step1": "打开目标系统的“新增/编辑”表单页面。",
-    "help.step2": "打开浏览器侧边栏：点击扩展图标→打开侧边栏。",
-    "help.step3": "选择 CSV / XLSX 文件（第一行是表头）。",
-    "help.step4": "在“选择列”里选中列名，点击“开始点选网页字段”，然后去网页上点对应输入框完成绑定。",
-    "help.step5": "点击“填充当前行”，逐行完成录入。",
+    "help.title": "使用说明",
+    "help.desc": "",
+    "help.step1": "<b>必做</b>：选择数据源-上传excel或csv等表格数据文件。",
+    "help.step2": "<b>必做</b>：在“数据列映射”里选中列名，点击“开始点选网页数据列字段”，然后去网页上点对应输入框完成字段绑定。",
+    "help.step3": "<b>选做</b>：在“数据行映射”里选中列名，点击“开始点选网页身份列字段”，然后去网页上点对应输入框完成身份绑定。",
+    "help.step4": "<b>必做</b>：手动选择填充哪一行数据或自动匹配数据行，点击”填充当前行“完成数据填充。",
+    "help.step5": "<b>技巧</b>：点选完成的绑定关系可以保存到当前站点，下次打开插件可以载入站点配置，不需重新点选建立映射关系。",
     "help.tipLabel": "提示：",
-    "help.tip": "保存/提交由用户手动完成，避免误操作。",
+    "help.tip": "该插件完全脱网离线操作，绝对保证数据安全！",
     "log.title": "日志",
     "log.desc": "运行过程与异常记录。",
     "data.title": "1) 数据源",
-    "data.desc": "导入表格文件，使用第一行作为表头。",
+    "data.desc": "导入表格文件，使用首行作为列名。",
     "data.upload": "上传数据文件",
     "data.noFile": "未选择",
     "data.sheet": "Sheet（仅 XLSX）",
@@ -122,7 +125,7 @@ const i18n = {
     "map.view": "查看站点配置",
     "identity.title": "数据行映射(身份映射)",
     "identity.desc": "建议使用唯一 ID 列，名称可能重复。",
-    "identity.col": "锚点列（建议使用唯一 ID 列，名称可能重复）",
+    "identity.col": "身份列（建议使用唯一 ID 列，名称可能重复）",
     "identity.pick": "开始点选网页身份列字段",
     "identity.list": "身份映射列表",
     "identity.hint": "提示：点击网页任意元素，绑定数据身份列，实现当前页面自动选择填充数据行。",
@@ -146,6 +149,8 @@ const i18n = {
     "fill.auto": "自动步进下一行数据",
     "fill.step": "填充当前行",
     "fill.next": "下一条",
+    "fill.alert.noFile": "提示：请先上传数据文件。",
+    "fill.alert.noMap": "提示：请先完成文件数据列映射或加载站点配置。",
     "footer.text": "v0.1 MVP · Local-first · No cloud",
     "footer.siteKey": "站点配置键",
   },
@@ -158,15 +163,15 @@ const i18n = {
     "settings.lang": "Language",
     "settings.lang.zh": "中文",
     "settings.lang.en": "English",
-    "help.title": "Quick Guide (MVP)",
-    "help.desc": "No system privileges needed. Simulates input and clicks on the page.",
-    "help.step1": "Open the target system’s new/edit form page.",
-    "help.step2": "Open the side panel: click the extension icon → open side panel.",
-    "help.step3": "Choose a CSV/XLSX file (first row is headers).",
-    "help.step4": "Select a column, click “Pick field on page”, then click the matching input on the page.",
-    "help.step5": "Click “Fill current row” to fill row by row.",
+    "help.title": "Quick Guide",
+    "help.desc": "",
+    "help.step1": "<b>Required</b>: pick a data source and upload a CSV/XLSX file.",
+    "help.step2": "<b>Required</b>: in “Data column mapping”, select a column and click “Pick data field on page”, then click the matching input on the page.",
+    "help.step3": "<b>Optional</b>: in “Row mapping”, select a column and click “Pick identity column on page”, then click the matching field on the page.",
+    "help.step4": "<b>Required</b>: manually choose a row or use auto match, then click “Fill current row”.",
+    "help.step5": "<b>Tip</b>: save mappings to the current site so you can load them next time.",
     "help.tipLabel": "Tip:",
-    "help.tip": "Save/submit manually to avoid mistakes.",
+    "help.tip": "This extension works fully offline to keep your data safe.",
     "log.title": "Logs",
     "log.desc": "Runtime events and errors.",
     "data.title": "1) Data Source",
@@ -188,7 +193,7 @@ const i18n = {
     "map.view": "View site configs",
     "identity.title": "Row Mapping (Identity)",
     "identity.desc": "Use a unique ID when possible; names may repeat.",
-    "identity.col": "Anchor column (prefer a unique ID; names may repeat)",
+    "identity.col": "Identity column (prefer a unique ID; names may repeat)",
     "identity.pick": "Pick identity column on page",
     "identity.list": "Identity mapping",
     "identity.hint": "Tip: click any element to bind the identity column and auto-locate the row.",
@@ -212,6 +217,8 @@ const i18n = {
     "fill.auto": "Auto-advance to next row",
     "fill.step": "Fill current row",
     "fill.next": "Next",
+    "fill.alert.noFile": "Tip: please upload a data file first.",
+    "fill.alert.noMap": "Tip: complete data column mapping or load a site config first.",
     "footer.text": "v0.1 MVP · Local-first · No cloud",
     "footer.siteKey": "Site config key",
   },
@@ -222,6 +229,10 @@ function applyLang(lang) {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     if (dict[key]) el.textContent = dict[key];
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-html");
+    if (dict[key]) el.innerHTML = dict[key];
   });
   document.querySelectorAll("[data-i18n-title]").forEach((el) => {
     const key = el.getAttribute("data-i18n-title");
@@ -261,6 +272,35 @@ function setStatus({ stateText, progText, rowText, msg }) {
   if (progText && ui.stProg) ui.stProg.textContent = progText;
   if (rowText && ui.stRow) ui.stRow.textContent = rowText;
   if (msg && ui.stMsg) ui.stMsg.textContent = msg;
+}
+
+function setFillAlert(text) {
+  if (!ui.fillAlert) return;
+  if (!text) {
+    ui.fillAlert.textContent = "";
+    ui.fillAlert.style.display = "none";
+    return;
+  }
+  ui.fillAlert.textContent = text;
+  ui.fillAlert.style.display = "block";
+}
+
+function setPickAlert(mode, text) {
+  const el = mode === "identity" ? ui.identityPickAlert : ui.mapPickAlert;
+  if (!el) return;
+  if (!text) {
+    el.textContent = "";
+    el.style.display = "none";
+    return;
+  }
+  el.textContent = text;
+  el.style.display = "block";
+}
+
+function setIdentityStatus(text, warn = false) {
+  if (!ui.identityStatus) return;
+  ui.identityStatus.textContent = text || "—";
+  ui.identityStatus.classList.toggle("is-warn", Boolean(warn));
 }
 
 async function getActiveTab() {
@@ -319,10 +359,11 @@ function refreshColsUI() {
 }
 
 function updatePickIndicator() {
-  const hasSelection = state.data.headers.length > 0 && String(ui.colSelect.value || "").length > 0;
+  const hasHeaders = state.data.headers.length > 0;
+  const hasSelection = hasHeaders && String(ui.colSelect.value || "").length > 0;
   const active = state.pick.active && state.pick.mode === "field";
   ui.btnPick.classList.toggle("is-ready", active);
-  ui.btnPick.disabled = !hasSelection;
+  ui.btnPick.disabled = hasHeaders ? !hasSelection : false;
   const label = ui.btnPick.querySelector("[data-i18n=\"map.pick\"]");
   if (label) {
     label.textContent = active
@@ -333,10 +374,11 @@ function updatePickIndicator() {
 
 function updateIdentityIndicator() {
   if (!ui.btnPickIdentity || !ui.identityColSelect) return;
-  const hasSelection = state.data.headers.length > 0 && String(ui.identityColSelect.value || "").length > 0;
+  const hasHeaders = state.data.headers.length > 0;
+  const hasSelection = hasHeaders && String(ui.identityColSelect.value || "").length > 0;
   const active = state.pick.active && state.pick.mode === "identity";
   ui.btnPickIdentity.classList.toggle("is-ready", active);
-  ui.btnPickIdentity.disabled = !hasSelection;
+  ui.btnPickIdentity.disabled = hasHeaders ? !hasSelection : false;
   const label = ui.btnPickIdentity.querySelector("[data-i18n=\"identity.pick\"]");
   if (label) {
     label.textContent = active
@@ -347,7 +389,7 @@ function updateIdentityIndicator() {
 
 function updateIdentityUI() {
   if (!state.identityMapping) {
-    if (ui.identityStatus) ui.identityStatus.textContent = "—";
+  setIdentityStatus("—");
     renderIdentityMappingUI();
     return;
   }
@@ -611,11 +653,16 @@ function renderRowPreview(row, rowIndex) {
 
 async function matchIdentityRow() {
   if (!state.identityMapping?.selector) {
-    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No identity mapping yet." : "尚未绑定页面身份字段。";
+    setIdentityStatus(
+      state.lang === "en"
+        ? "Tip: complete row mapping (identity) first."
+        : "提示：请先完成数据行映射(身份映射)。",
+      true
+    );
     return;
   }
   if (!state.data.rows.length) {
-    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "Please load data first." : "请先载入数据。";
+    setIdentityStatus(state.lang === "en" ? "Please load data first." : "请先载入数据。");
     return;
   }
   const colIndex = parseInt(ui.identityColSelect?.value || state.identityMapping.colIndex || "0", 10);
@@ -631,12 +678,12 @@ async function matchIdentityRow() {
     });
     pageValue = String(res?.text || "").trim();
   } catch (e) {
-    if (ui.identityStatus) ui.identityStatus.textContent = (state.lang === "en" ? "Read failed: " : "读取失败：") + String(e?.message || e);
+    setIdentityStatus((state.lang === "en" ? "Read failed: " : "读取失败：") + String(e?.message || e));
     return;
   }
 
   if (!pageValue) {
-    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No text found on page." : "页面未读取到身份文本。";
+    setIdentityStatus(state.lang === "en" ? "No text found on page." : "页面未读取到身份文本。");
     return;
   }
 
@@ -656,18 +703,18 @@ async function matchIdentityRow() {
   });
 
   if (matches.length === 0) {
-    if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "No match found." : "未匹配到，请检查映射或数据。";
+    setIdentityStatus(state.lang === "en" ? "No match found." : "未匹配到，请检查映射或数据。");
     renderRowPreview([], null);
     if (ui.identityMatchTitle) ui.identityMatchTitle.style.display = "none";
     if (ui.identityMatchList) ui.identityMatchList.style.display = "none";
     return;
   }
   if (matches.length > 1) {
-    if (ui.identityStatus) {
-      ui.identityStatus.textContent = state.lang === "en"
+    setIdentityStatus(
+      state.lang === "en"
         ? `Matched ${matches.length} rows. Please choose one.`
-        : `匹配到 ${matches.length} 条，请选择一条。`;
-    }
+        : `匹配到 ${matches.length} 条，请选择一条。`
+    );
     renderRowPreview([], null);
     if (ui.identityMatchTitle) ui.identityMatchTitle.style.display = "block";
     if (ui.identityMatchList) {
@@ -704,7 +751,9 @@ async function matchIdentityRow() {
   const rowIndex = matches[0] + 2;
   state.selection.currentRowIndex = rowIndex;
   renderRowPreview(state.data.rows[matches[0]] || [], rowIndex);
-  if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? `Matched row ${rowIndex}: ${pageValue}` : `已匹配到第 ${rowIndex} 行：${pageValue}`;
+  setIdentityStatus(
+    state.lang === "en" ? `Matched row ${rowIndex}: ${pageValue}` : `已匹配到第 ${rowIndex} 行：${pageValue}`
+  );
   if (ui.identityMatchTitle) ui.identityMatchTitle.style.display = "none";
   if (ui.identityMatchList) ui.identityMatchList.style.display = "none";
 }
@@ -760,6 +809,9 @@ async function loadFile(file) {
     refreshColsUI();
     updateRowRangeDefaults();
     renderRowPreview(state.data.rows[0] || [], 2);
+    setPickAlert("field", "");
+    setPickAlert("identity", "");
+    setFillAlert("");
     log(state.lang === "en"
       ? `Loaded CSV: ${state.data.headers.length} cols, ${state.data.rows.length} rows`
       : `已加载CSV：${state.data.headers.length} 列，${state.data.rows.length} 行`);
@@ -776,6 +828,9 @@ async function loadFile(file) {
     refreshSheetUI();
     await reloadActiveSheetFromCurrentFile();
     renderRowPreview(state.data.rows[0] || [], 2);
+    setPickAlert("field", "");
+    setPickAlert("identity", "");
+    setFillAlert("");
     log(state.lang === "en"
       ? `Loaded XLSX: ${state.data.sheets.length} sheets`
       : `已加载XLSX：${state.data.sheets.length} 个 Sheet`);
@@ -923,6 +978,11 @@ async function beginPick(mode) {
     return;
   }
 
+  if (!state.data.rows.length) {
+    setPickAlert(mode, i18n[state.lang]["fill.alert.noFile"]);
+    return;
+  }
+
   const colIndex = mode === "identity"
     ? parseInt(ui.identityColSelect?.value || "0", 10)
     : parseInt(ui.colSelect.value || "0", 10);
@@ -940,6 +1000,9 @@ async function beginPick(mode) {
 
   setStatus({ stateText: state.lang === "en" ? "Picking" : "点选中", msg: state.lang === "en" ? "Click the target element on the page." : "请到网页上点击目标元素。" });
   log(state.lang === "en" ? `Pick mode (${mode}): click an element.` : `进入点选模式(${mode})：请点击网页元素。`);
+
+  setPickAlert("field", "");
+  setPickAlert("identity", "");
 
   state.pick.active = true;
   state.pick.mode = mode;
@@ -1012,7 +1075,7 @@ chrome.runtime.onMessage.addListener((msg) => {
         matchStrategy: ui.identityStrategy?.value || "exact",
       };
       updateIdentityUI();
-      if (ui.identityStatus) ui.identityStatus.textContent = state.lang === "en" ? "Identity field bound." : "身份字段已绑定。";
+      setIdentityStatus(state.lang === "en" ? "Identity field bound." : "身份字段已绑定。");
       log(state.lang === "en" ? `Identity bound: ${colName} -> ${selector}` : `身份已绑定：${colName} -> ${selector}`);
     }
   }
@@ -1039,13 +1102,16 @@ function normalizeCell(v) {
 
 async function runBatch({ stepOnly = false }) {
   if (!state.data.rows.length) {
+    setFillAlert(i18n[state.lang]["fill.alert.noFile"]);
     log(state.lang === "en" ? "Please load a CSV/XLSX file." : "请先载入 CSV/XLSX。" );
     return;
   }
   if (!state.mapping.length) {
+    setFillAlert(i18n[state.lang]["fill.alert.noMap"]);
     log(state.lang === "en" ? "Please configure field mapping." : "请先配置字段映射。" );
     return;
   }
+  setFillAlert("");
 
   state.runner.running = true;
 
@@ -1200,6 +1266,12 @@ async function init() {
   ui.colSelect.addEventListener("change", () => {
     updatePickIndicator();
   });
+  ui.colSelect.addEventListener("focus", () => {
+    if (!state.data.rows.length) setPickAlert("field", i18n[state.lang]["fill.alert.noFile"]);
+  });
+  ui.colSelect.addEventListener("click", () => {
+    if (!state.data.rows.length) setPickAlert("field", i18n[state.lang]["fill.alert.noFile"]);
+  });
   if (ui.identityColSelect) {
     ui.identityColSelect.addEventListener("change", () => {
       updateIdentityIndicator();
@@ -1207,6 +1279,12 @@ async function init() {
         state.identityMapping.colIndex = parseInt(ui.identityColSelect.value || "0", 10);
         state.identityMapping.colName = state.data.headers[state.identityMapping.colIndex] || state.identityMapping.colName;
       }
+    });
+    ui.identityColSelect.addEventListener("focus", () => {
+      if (!state.data.rows.length) setPickAlert("identity", i18n[state.lang]["fill.alert.noFile"]);
+    });
+    ui.identityColSelect.addEventListener("click", () => {
+      if (!state.data.rows.length) setPickAlert("identity", i18n[state.lang]["fill.alert.noFile"]);
     });
   }
 
