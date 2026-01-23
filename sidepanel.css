@@ -175,6 +175,10 @@ body{
   color: var(--text);
 }
 .btn.ghost{padding:10px 12px; min-width:40px}
+.btn#btnNextRow{
+  white-space:nowrap;
+  min-width:64px;
+}
 .btn.ghost.is-active{
   border-color: rgba(122,162,255,.45);
   background: rgba(122,162,255,.14);
@@ -426,6 +430,7 @@ body{
   box-shadow: 0 8px 18px rgba(30,55,120,.06), 0 1px 0 rgba(255,255,255,.8) inset;
 }
 .hint{color:var(--muted); font-size:12px; margin-top:10px; line-height:1.35}
+.hint.hint-tight{margin-top:4px}
 [data-theme="light"] .field .label,
 [data-theme="light"] .label,
 [data-theme="light"] .hint,
@@ -562,6 +567,14 @@ body{
   font-size:12px;
   color:var(--text);
   overflow-x:auto;
+}
+.row-preview.is-pending{
+  border-color: rgba(255,162,68,.6);
+  background: rgba(255,162,68,.08);
+}
+.row-preview.is-done{
+  border-color: rgba(74,200,140,.6);
+  background: rgba(74,200,140,.08);
 }
 .row-preview-head,
 .row-preview-body{

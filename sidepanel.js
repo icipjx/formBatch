@@ -26,6 +26,7 @@ const ui = {
   btnViewSites: $("#btnViewSites"),
   siteList: $("#siteList"),
   btnStep: $("#btnStep"),
+  btnNextRow: $("#btnNextRow"),
   stState: $("#stState"),
   stProg: $("#stProg"),
   stRow: $("#stRow"),
@@ -114,7 +115,7 @@ const i18n = {
     "map.pick": "开始点选网页数据列字段",
     "map.hint": "提示：点击网页中的输入框/下拉框/文本区域，即可绑定到当前列。",
     "map.list": "数据列映射列表",
-    "map.fileCols": "文件数据列",
+    "map.fileCols": "文件数据列(默认第一行)",
     "map.save": "保存到当前站点",
     "map.clear": "清空映射",
     "map.load": "载入站点配置",
@@ -128,6 +129,7 @@ const i18n = {
     "identity.strategy": "匹配策略",
     "identity.autoTitle": "自动匹配填充行",
     "identity.matches": "匹配结果",
+    "identity.autoTip": "提示：需完成数据行映射(身份映射)",
     "identity.strategy.exact": "完全一致",
     "identity.strategy.contains": "包含匹配",
     "identity.match": "自动匹配当前页面行",
@@ -143,6 +145,7 @@ const i18n = {
     "fill.preview": "预览当前行号 — 数据",
     "fill.auto": "自动步进下一行数据",
     "fill.step": "填充当前行",
+    "fill.next": "下一条",
     "footer.text": "v0.1 MVP · Local-first · No cloud",
     "footer.siteKey": "站点配置键",
   },
@@ -178,7 +181,7 @@ const i18n = {
     "map.pick": "Pick data field on page",
     "map.hint": "Tip: click an input/select/textarea to bind it to current column.",
     "map.list": "Data mapping list",
-    "map.fileCols": "File data columns",
+    "map.fileCols": "File data columns (default: first row)",
     "map.save": "Save to current site",
     "map.clear": "Clear mapping",
     "map.load": "Load site config",
@@ -192,6 +195,7 @@ const i18n = {
     "identity.strategy": "Match strategy",
     "identity.autoTitle": "Auto match row",
     "identity.matches": "Match results",
+    "identity.autoTip": "Tip: complete row mapping (identity) first.",
     "identity.strategy.exact": "Exact",
     "identity.strategy.contains": "Contains",
     "identity.match": "Match row on current page",
@@ -207,6 +211,7 @@ const i18n = {
     "fill.preview": "Preview row — data",
     "fill.auto": "Auto-advance to next row",
     "fill.step": "Fill current row",
+    "fill.next": "Next",
     "footer.text": "v0.1 MVP · Local-first · No cloud",
     "footer.siteKey": "Site config key",
   },
@@ -568,16 +573,19 @@ function renderRowPreview(row, rowIndex) {
   if (!row || !row.length) {
     ui.rowPreviewHead.textContent = "—";
     ui.rowPreviewBody.textContent = "—";
+    const preview = document.querySelector(".row-preview");
+    if (preview) preview.classList.remove("is-pending", "is-done");
     return;
   }
+  const rowNum = Number(rowIndex);
   const headers = [state.lang === "en" ? "Row" : "行号"].concat(
     state.data.headers.map((h, i) => h || `列${i + 1}`)
   );
   const body = row.map((v) => String(v ?? "").trim());
   const cols = Math.max(headers.length, body.length + 1);
 
-  const rowNum = rowIndex ? String(rowIndex) : "—";
-  const bodyWithRow = [rowNum].concat(body);
+  const rowLabel = Number.isFinite(rowNum) && rowNum > 0 ? String(rowNum) : "—";
+  const bodyWithRow = [rowLabel].concat(body);
   ui.rowPreviewHead.innerHTML = headers.map((h) => `<span class="row-preview-cell">${h}</span>`).join("");
   ui.rowPreviewBody.innerHTML = bodyWithRow.map((v) => `<span class="row-preview-cell">${v || "—"}</span>`).join("");
 
@@ -591,6 +599,13 @@ function renderRowPreview(row, rowIndex) {
     const w = Math.min(Math.max(width, 80), 260);
     h.style.flex = `0 0 ${w}px`;
     b.style.flex = `0 0 ${w}px`;
+  }
+
+  const preview = document.querySelector(".row-preview");
+  if (preview) {
+    if (!preview.classList.contains("is-done")) {
+      preview.classList.add("is-pending");
+    }
   }
 }
 
@@ -1052,6 +1067,11 @@ async function runBatch({ stepOnly = false }) {
     msg: state.lang === "en" ? "Filling..." : "填充中…",
   });
   renderRowPreview(row, globalRowIndex);
+  const preview = document.querySelector(".row-preview");
+  if (preview) {
+    preview.classList.add("is-pending");
+    preview.classList.remove("is-done");
+  }
 
   const rowData = {};
   state.data.headers.forEach((_, i) => (rowData[i] = normalizeCell(row[i] ?? "")));
@@ -1065,17 +1085,32 @@ async function runBatch({ stepOnly = false }) {
     const res = await safeSendToActiveTab({ type: "FB_FILL_ONE", payload });
     if (res?.ok) {
       state.runner.results.push({ i: globalRowIndex, status: "OK", msg: res.message || "" });
+      state.runner.lastFill = { i: globalRowIndex, status: "OK" };
+      if (preview) {
+        preview.classList.add("is-done");
+        preview.classList.remove("is-pending");
+      }
       setStatus({ msg: state.lang === "en" ? "Success" : "成功" });
       log(state.lang === "en" ? `✓ Row ${globalRowIndex} success` : `✓ 第${globalRowIndex}行成功`);
     } else {
       const err = res?.error || (state.lang === "en" ? "Unknown error" : "未知错误");
       state.runner.results.push({ i: globalRowIndex, status: "FAIL", msg: err });
+      state.runner.lastFill = { i: globalRowIndex, status: "FAIL" };
+      if (preview) {
+        preview.classList.add("is-pending");
+        preview.classList.remove("is-done");
+      }
       setStatus({ msg: (state.lang === "en" ? "Failed: " : "失败：") + err });
       log(state.lang === "en" ? `✗ Row ${globalRowIndex} failed: ${err}` : `✗ 第${globalRowIndex}行失败：${err}`);
     }
   } catch (e) {
     const err = String(e?.message || e);
     state.runner.results.push({ i: globalRowIndex, status: "FAIL", msg: err });
+    state.runner.lastFill = { i: globalRowIndex, status: "FAIL" };
+    if (preview) {
+      preview.classList.add("is-pending");
+      preview.classList.remove("is-done");
+    }
     setStatus({ msg: (state.lang === "en" ? "Failed: " : "失败：") + err });
     log(state.lang === "en" ? `✗ Row ${globalRowIndex} failed (comm error): ${err}` : `✗ 第${globalRowIndex}行失败（通信异常）：${err}`);
   }
@@ -1088,7 +1123,31 @@ async function runBatch({ stepOnly = false }) {
     if (next <= start + total - 1) {
       state.selection.currentRowIndex = next;
       renderRowPreview(rows[idx + 1] || [], next);
+      const preview = document.querySelector(".row-preview");
+      if (preview) {
+        preview.classList.add("is-pending");
+        preview.classList.remove("is-done");
+      }
     }
+  }
+}
+
+function goNextRowPreview() {
+  if (!state.data.rows.length) return;
+  const { start, rows } = getRowSlice();
+  const total = rows.length;
+  if (!total) return;
+  const current = state.selection.currentRowIndex ?? start;
+  let next = current + 1;
+  const maxRow = start + total - 1;
+  if (next > maxRow) next = maxRow;
+  state.selection.currentRowIndex = next;
+  const idx = next - start;
+  renderRowPreview(rows[idx] || [], next);
+  const preview = document.querySelector(".row-preview");
+  if (preview) {
+    preview.classList.add("is-pending");
+    preview.classList.remove("is-done");
   }
 }
 
@@ -1115,6 +1174,7 @@ async function init() {
     const f = ui.fileInput.files?.[0];
     if (!f) return;
     try {
+      if (state.data.filename) clearFileSelection();
       await loadFile(f);
     } catch (e) {
       log((state.lang === "en" ? "Load failed: " : "载入失败：") + String(e?.message || e));
@@ -1225,6 +1285,7 @@ async function init() {
   });
 
   ui.btnStep.addEventListener("click", () => runBatch({ stepOnly: true }));
+  if (ui.btnNextRow) ui.btnNextRow.addEventListener("click", goNextRowPreview);
 
   ui.btnHelp.addEventListener("click", () => {
     const show = ui.helpCard.style.display === "none";

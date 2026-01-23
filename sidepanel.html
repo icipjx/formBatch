@@ -126,7 +126,7 @@
               <button class="group-toggle" type="button" aria-expanded="true">v</button>
             </div>
             <div class="group-body">
-              <div class="label" data-i18n="map.fileCols">文件数据列</div>
+              <div class="label" data-i18n="map.fileCols">文件数据列(默认第一行)</div>
               <select id="colSelect" class="input"></select>
 
               <button class="btn primary" id="btnPick">
@@ -216,6 +216,7 @@
               <button class="group-toggle" type="button" aria-expanded="true">v</button>
             </div>
             <div class="group-body">
+              <div class="hint hint-tight" data-i18n="identity.autoTip">提示：需完成数据行映射(身份映射)</div>
               <div class="label" data-i18n="identity.strategy">匹配策略</div>
               <div class="field">
                 <select id="identityStrategy" class="input">
@@ -246,6 +247,7 @@
                 <span class="dot"></span>
                 <span data-i18n="fill.step">填充当前行</span>
               </button>
+              <button class="btn ghost" id="btnNextRow" data-i18n="fill.next">下一条</button>
             </div>
           </div>
         </div>
