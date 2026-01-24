@@ -13,13 +13,16 @@
         <div class="logo"></div>
         <div class="title">
           <div class="name">FormBatcher</div>
-          <div class="sub" data-i18n="brand.sub">Batch-fill any web form · CSV / XLSX</div>
+          <div class="sub" data-i18n="brand.sub">Batch-fill any web form</div>
         </div>
       </div>
 
       <div class="actions settings-wrap">
         <button class="btn ghost" id="btnSettings" title="设置" data-i18n-title="settings.title">
           <span class="ico">🛠</span>
+        </button>
+        <button class="btn ghost" id="btnTrial" title="额度" data-i18n-title="trial.title">
+          <span class="ico">🎫</span>
         </button>
         <button class="btn ghost" id="btnHelp" title="使用说明" data-i18n-title="help.title">?</button>
 
@@ -60,6 +63,22 @@
           </ol>
           <div class="tip">
             <b data-i18n="help.tipLabel">提示：</b><span data-i18n="help.tip">保存/提交由用户手动完成，避免误操作。</span>
+          </div>
+        </div>
+      </section>
+      <section class="card" id="trialCard" style="display:none;">
+        <div class="card-hd">
+          <div class="card-title" data-i18n="trial.title">额度</div>
+        </div>
+        <div class="card-bd">
+          <div class="trial-remaining" id="trialRemainingText">当前免费使用次数：—次</div>
+          <ol class="help trial-list">
+            <li data-i18n-html="trial.item1"><b>每日免费额度</b>：10 条数据填充</li>
+            <li data-i18n-html="trial.item2"><b>继续使用</b>：前往充值页面完成充值，并在设置中填写 License<br /><a class="trial-link" href="http://charge.com" target="_blank" rel="noopener">http://charge.com</a></li>
+            <li data-i18n-html="trial.item3"><b>联系支持</b>：<span class="trial-icon">▶</span> YouTube：jx / <span class="trial-icon">📺</span> Bilibili：jx</li>
+          </ol>
+          <div class="tip trial-tip" data-i18n-html="trial.tip">
+            <b>提示：</b><span>本地验签，不联网操作，数据绝对安全！</span>
           </div>
         </div>
       </section>
@@ -264,6 +283,7 @@
   </div>
 
   <script src="vendor/xlsx.full.min.js"></script>
+  <script src="trialStore.js"></script>
   <script src="sidepanel.js"></script>
 </body>
 </html>

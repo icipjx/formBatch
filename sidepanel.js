@@ -36,6 +36,7 @@ const ui = {
   btnExport: $("#btnExport"),
   logBox: $("#logBox"),
   btnSettings: $("#btnSettings"),
+  btnTrial: $("#btnTrial"),
   btnHelp: $("#btnHelp"),
   helpCard: $("#helpCard"),
   btnClearFile: $("#btnClearFile"),
@@ -48,6 +49,8 @@ const ui = {
   filterTitle: $("#filterTitle"),
   filterList: $("#filterList"),
   settingsPanel: $("#settingsPanel"),
+  trialCard: $("#trialCard"),
+  trialRemainingText: $("#trialRemainingText"),
   identityColSelect: $("#identityColSelect"),
   btnPickIdentity: $("#btnPickIdentity"),
   identityPickAlert: $("#identityPickAlert"),
@@ -87,7 +90,7 @@ const state = {
 
 const i18n = {
   zh: {
-    "brand.sub": "Batch-fill any web form · CSV / XLSX",
+    "brand.sub": "Batch-fill any web form",
     "settings.title": "设置",
     "settings.theme": "主题",
     "settings.theme.dark": "暗色",
@@ -95,6 +98,11 @@ const i18n = {
     "settings.lang": "语言",
     "settings.lang.zh": "中文",
     "settings.lang.en": "English",
+    "trial.title": "额度",
+    "trial.item1": "<b>每日免费额度</b>：10 条数据填充",
+    "trial.item2": "<b>继续使用</b>：前往充值页面完成充值，并在设置中填写 License<br /><a class=\"trial-link\" href=\"http://charge.com\" target=\"_blank\" rel=\"noopener\">http://charge.com</a>",
+    "trial.item3": "<b>联系支持</b>：<span class=\"trial-icon\">▶</span> YouTube：jx / <span class=\"trial-icon\">📺</span> Bilibili：jx",
+    "trial.tip": "<b>提示：</b><span>本地验签，不联网操作，数据绝对安全！</span>",
     "help.title": "使用说明",
     "help.desc": "",
     "help.step1": "<b>必做</b>：选择数据源-上传excel或csv等表格数据文件。",
@@ -155,7 +163,7 @@ const i18n = {
     "footer.siteKey": "站点配置键",
   },
   en: {
-    "brand.sub": "Batch-fill any web form · CSV / XLSX",
+    "brand.sub": "Batch-fill any web form",
     "settings.title": "Settings",
     "settings.theme": "Theme",
     "settings.theme.dark": "Dark",
@@ -163,6 +171,11 @@ const i18n = {
     "settings.lang": "Language",
     "settings.lang.zh": "中文",
     "settings.lang.en": "English",
+    "trial.title": "Usage",
+    "trial.item1": "<b>Daily free quota</b>: 10 fills",
+    "trial.item2": "<b>Continue</b>: complete payment and fill in the License in Settings<br /><a class=\"trial-link\" href=\"http://charge.com\" target=\"_blank\" rel=\"noopener\">http://charge.com</a>",
+    "trial.item3": "<b>Support</b>: <span class=\"trial-icon\">▶</span> YouTube: jx / <span class=\"trial-icon\">📺</span> Bilibili: jx",
+    "trial.tip": "<b>Tip:</b><span>Local verification only, no network usage. Your data stays safe.</span>",
     "help.title": "Quick Guide",
     "help.desc": "",
     "help.step1": "<b>Required</b>: pick a data source and upload a CSV/XLSX file.",
@@ -301,6 +314,14 @@ function setIdentityStatus(text, warn = false) {
   if (!ui.identityStatus) return;
   ui.identityStatus.textContent = text || "—";
   ui.identityStatus.classList.toggle("is-warn", Boolean(warn));
+}
+
+async function updateTrialUI() {
+  if (!ui.trialRemainingText) return;
+  const remaining = await getTrialRemaining();
+  ui.trialRemainingText.textContent = state.lang === "en"
+    ? `Free uses remaining: ${remaining}`
+    : `当前免费使用次数：${remaining}次`;
 }
 
 async function getActiveTab() {
@@ -502,6 +523,7 @@ function setupGroupToggles() {
 function setupModuleLayout() {
   const logCard = ui.logBox?.closest(".card");
   const helpCard = ui.helpCard;
+  const trialCard = ui.trialCard;
   const content = document.querySelector(".content");
   if (logCard && content) {
     logCard.classList.add("is-log");
@@ -510,6 +532,9 @@ function setupModuleLayout() {
   }
   if (helpCard && content) {
     content.prepend(helpCard);
+  }
+  if (trialCard && content) {
+    content.prepend(trialCard);
   }
 }
 
@@ -1101,6 +1126,15 @@ function normalizeCell(v) {
 }
 
 async function runBatch({ stepOnly = false }) {
+  const remaining = await getTrialRemaining();
+  if (remaining <= 0) {
+    const msg = state.lang === "en"
+      ? "Trial limit reached. Please subscribe to continue."
+      : "试用次数已用完，请订阅后继续使用。";
+    alert(msg);
+    log(msg);
+    return;
+  }
   if (!state.data.rows.length) {
     setFillAlert(i18n[state.lang]["fill.alert.noFile"]);
     log(state.lang === "en" ? "Please load a CSV/XLSX file." : "请先载入 CSV/XLSX。" );
@@ -1152,6 +1186,8 @@ async function runBatch({ stepOnly = false }) {
     if (res?.ok) {
       state.runner.results.push({ i: globalRowIndex, status: "OK", msg: res.message || "" });
       state.runner.lastFill = { i: globalRowIndex, status: "OK" };
+      await consumeTrial(1);
+      await updateTrialUI();
       if (preview) {
         preview.classList.add("is-done");
         preview.classList.remove("is-pending");
@@ -1221,6 +1257,8 @@ async function init() {
   setupModuleLayout();
   setupCardToggles();
   setupGroupToggles();
+  await initTrialIfNeeded();
+  await updateTrialUI();
 
   const stored = await chrome.storage.local.get(["ui:theme", "ui:lang"]);
   const theme = stored["ui:theme"] || "dark";
@@ -1368,6 +1406,7 @@ async function init() {
   ui.btnHelp.addEventListener("click", () => {
     const show = ui.helpCard.style.display === "none";
     ui.helpCard.style.display = show ? "block" : "none";
+    ui.btnHelp.classList.toggle("is-active", show);
   });
 
   ui.btnSettings.addEventListener("click", (e) => {
@@ -1375,13 +1414,19 @@ async function init() {
     const show = ui.settingsPanel.style.display === "none";
     ui.settingsPanel.style.display = show ? "block" : "none";
   });
+  ui.btnTrial.addEventListener("click", async () => {
+    if (!ui.trialCard) return;
+    const show = ui.trialCard.style.display === "none";
+    if (show) await updateTrialUI();
+    ui.trialCard.style.display = show ? "block" : "none";
+    ui.btnTrial.classList.toggle("is-active", show);
+  });
 
   document.addEventListener("click", (e) => {
     if (!ui.settingsPanel || ui.settingsPanel.style.display === "none") return;
     if (ui.settingsPanel.contains(e.target) || ui.btnSettings.contains(e.target)) return;
     ui.settingsPanel.style.display = "none";
   });
-
   document.querySelectorAll(".seg-btn[data-theme-val]").forEach((btn) => {
     btn.addEventListener("click", () => setTheme(btn.getAttribute("data-theme-val")));
   });

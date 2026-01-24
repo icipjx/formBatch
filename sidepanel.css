@@ -97,6 +97,38 @@ body{
   box-shadow: var(--shadow);
   z-index:40;
 }
+.trial-remaining{
+  font-weight:700;
+  color:var(--text);
+  font-size:13px;
+  margin-bottom:6px;
+}
+.trial-list{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.55;
+}
+.trial-list b{
+  color:var(--text);
+  font-weight:700;
+}
+.trial-link{
+  color:var(--accent);
+  font-weight:700;
+  text-decoration:none;
+}
+.trial-link:hover{
+  text-decoration:underline;
+}
+.trial-icon{
+  font-size:12px;
+  margin-right:4px;
+}
+.trial-tip{
+  border-radius:999px;
+  margin-top:10px;
+}
 .settings-title{
   font-weight:800;
   margin-bottom:10px;
